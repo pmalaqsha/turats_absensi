@@ -1,0 +1,6 @@
+{
+  "name": "Absensi Takhossus Kutubutturats",
+  "description": "Aplikasi Absensi Takhossus Kutubutturats berbasis Web App / PWA dengan Google Sheets & Drive backend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

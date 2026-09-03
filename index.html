@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sistem Absensi Kutubutturats - Ma'had Al-Aqsha</title>
+  
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="description" content="Aplikasi Pencatatan dan Manajemen Absensi Kajian Kutubutturats Ma'had Al-Aqsha" />
+  <link rel="manifest" href="manifest.json" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              50: "#ecfdf5",
+              100: "#d1fae5",
+              200: "#a7f3d0",
+              300: "#6ee7b7",
+              400: "#34d399",
+              500: "#10b981",
+              600: "#059669",
+              700: "#047857",
+              800: "#065f46",
+              900: "#064e3b",
+              950: "#022c22",
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    @keyframes tabFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.995);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .tab-content {
+      will-change: opacity, transform;
+    }
+    .tab-content:not(.hidden) {
+      animation: tabFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .admin-section {
+      will-change: opacity, transform;
+    }
+    .admin-section:not(.hidden) {
+      animation: tabFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .nav-item {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-item:active {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div id="appHeaderLogoContainer" class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner overflow-hidden flex-shrink-0">
+          <i id="appHeaderLogoIcon" class="fa-solid fa-book-quran text-amber-300 text-xl"></i>
+          <img id="appHeaderLogoImg" src="" alt="Logo Lembaga" class="w-full h-full object-cover hidden" />
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight leading-tight flex items-center gap-1.5">
+            <span id="appHeaderTitle">Absensi Kutubutturats</span>
+            <span id="appHeaderSubTitle" class="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.5 rounded font-medium border border-emerald-500/30">Al-Aqsha</span>
+          </h1>
+          <p id="appHeaderDesc" class="text-[11px] text-emerald-200">Takhossus & Kajian Angkatan Santri</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button type="button" onclick="openAdminSettingsQuickly()" class="px-2.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-200 hover:bg-emerald-900 transition active:scale-95 shadow-sm flex items-center gap-1.5" title="Pengaturan Lembaga & Sistem (Admin)">
+          <i class="fa-solid fa-gear text-amber-300"></i>
+          <span class="hidden sm:inline text-[11px] font-medium">Pengaturan</span>
+        </button>
+        <div id="syncStatusBadge" onclick="manualSync()" class="cursor-pointer flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-xs text-emerald-100 hover:bg-emerald-900 transition active:scale-95 shadow-sm" title="Klik untuk sinkronisasi antrean">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="syncStatusDot"></span>
+          <span id="syncStatusText" class="font-medium text-[11px]">Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 pb-28">
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed top-16 right-4 left-4 max-w-md mx-auto z-50 transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+      <div class="bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-3 border border-slate-700 backdrop-blur-md">
+        <div id="toastIcon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+        <div id="toastMessage" class="text-xs font-medium flex-1">Notifikasi</div>
+      </div>
+    </div>
+
+    <!-- TAB 1: DASHBOARD -->
+    <section id="tabDashboard" class="tab-content space-y-4">
+      <div class="bg-gradient-to-br from-emerald-800 to-teal-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
+        <div class="flex items-start justify-between relative z-10 flex-wrap sm:flex-nowrap gap-3">
+          <div class="flex items-start gap-3">
+            <div id="appDashboardLogoContainer" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner overflow-hidden flex-shrink-0">
+              <i id="appDashboardLogoIcon" class="fa-solid fa-book-quran text-amber-300 text-2xl"></i>
+              <img id="appDashboardLogoImg" src="" alt="Logo Lembaga" class="w-full h-full object-cover hidden" />
+            </div>
+            <div>
+              <div id="appDashboardTahunAjaran" class="text-[11px] font-semibold tracking-wider text-amber-300 uppercase mb-0.5">Tahun Ajaran 2026-2027</div>
+              <h2 id="appDashboardPortalTitle" class="text-lg sm:text-xl font-bold">Portal Absensi Kutubutturats</h2>
+              <p id="appDashboardLembagaName" class="text-xs text-emerald-200 mt-1 leading-relaxed">Pondok Modern Al-Aqsha • Pencatatan real-time, foto kamera langsung, & rekapitulasi kehadiran pengajar.</p>
+            </div>
+          </div>
+          <div class="text-right flex flex-col items-end self-end sm:self-auto ml-auto sm:ml-0">
+            <span id="currentClock" class="text-xs font-mono font-bold bg-white/15 px-2.5 py-1 rounded-lg border border-white/10">00:00:00</span>
+            <span id="currentDateStr" class="text-[10px] text-emerald-200 mt-1">Hari ini</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner Pengingat Otomatis Jadwal Absensi Hari Ini -->
+      <div id="todayAttendanceReminderContainer"></div>
+
+      <!-- Filter Controls -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-filter text-emerald-600"></i> Filter Log & Rekapitulasi
+          </h3>
+          <button onclick="resetDashboardFilters()" class="text-[11px] text-emerald-600 font-semibold hover:underline">Reset Filter</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-slate-600 mb-1">Dari Tanggal</label>
+            <input type="date" id="filterStartDate" onchange="renderDashboardStats()" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-slate-600 mb-1">Sampai Tanggal</label>
+            <input type="date" id="filterEndDate" onchange="renderDashboardStats()" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-slate-600 mb-1">Kategori Kajian</label>
+            <select id="filterType" onchange="renderDashboardStats()" class="w-full text-xs rounded-xl border border-slate-200 p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="all">Semua Kategori (Takhossus & Angkatan)</option>
+              <option value="takhossus">Hanya Takhossus</option>
+              <option value="reguler">Hanya Kajian Angkatan</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500">Total Sesi Masuk</div>
+            <div class="text-lg font-bold text-slate-800" id="statTotalSesi">0</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500">Total Hadir</div>
+            <div class="text-lg font-bold text-blue-700" id="statTotalHadir">0</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-envelope-open-text"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500">Izin / Sakit</div>
+            <div class="text-lg font-bold text-amber-700" id="statTotalIzinSakit">0</div>
+          </div>
+        </div>
+
+        <!-- Kartu Statistik Rerata Kehadiran Santri 7 Hari Terakhir -->
+        <div class="bg-white rounded-2xl p-3.5 border border-indigo-200/80 shadow-sm flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500 flex items-center gap-1">
+              <span>Rerata 7 Hari</span>
+              <span class="text-[9px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.2 rounded-full">7H</span>
+            </div>
+            <div class="text-lg font-bold text-indigo-700" id="statAvgHadir7Hari">0 <span class="text-[10px] font-normal text-slate-500">santri/sesi</span></div>
+            <div class="text-[9px] text-slate-400 mt-0.5" id="statSubAvg7Hari">0 hadir • 0 sesi</div>
+          </div>
+        </div>
+
+        <div onclick="toggleOfflineQueueModal()" class="bg-white rounded-2xl p-3.5 border border-purple-200/80 shadow-sm flex items-center space-x-3 col-span-2 sm:col-span-1 cursor-pointer hover:bg-purple-50/50 transition active:scale-95" title="Klik untuk mengelola antrean offline">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-500">Antrean Offline</div>
+            <div class="text-lg font-bold text-purple-700" id="statPendingQueue">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offline Queue Banner (Muncul Otomatis Jika Ada Antrean Offline) -->
+      <div id="offlineQueueAlertBanner" class="hidden bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-md border border-purple-500/40">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 text-lg">
+              <i class="fa-solid fa-inbox text-amber-300"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-xs sm:text-sm font-bold text-white">Sistem Antrean Offline-First</h4>
+                <span id="queueCountBadge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">
+                  0 Tertunda
+                </span>
+              </div>
+              <p class="text-[11px] text-purple-200 mt-0.5" id="queueDescriptionText">
+                Data absensi tersimpan lokal di IndexedDB/Storage dan akan otomatis disinkronkan saat koneksi tersedia.
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button onclick="manualSync()" class="flex-1 sm:flex-none px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-rotate"></i> Sinkron Sekarang
+            </button>
+            <button onclick="toggleOfflineQueueModal()" class="flex-1 sm:flex-none px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/20 transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-list-check"></i> Rincian Antrean
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="switchTab('takhossus')" class="flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-2xl shadow hover:from-emerald-700 hover:to-emerald-800 transition active:scale-95 text-xs sm:text-sm">
+          <i class="fa-solid fa-user-graduate text-base"></i> Input Absensi Takhossus
+        </button>
+        <button onclick="switchTab('reguler')" class="flex items-center justify-center gap-2 p-3.5 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-2xl shadow hover:from-teal-700 hover:to-emerald-800 transition active:scale-95 text-xs sm:text-sm">
+          <i class="fa-solid fa-users text-base"></i> Input Absensi Angkatan
+        </button>
+      </div>
+
+      <!-- Kartu Ringkasan Mingguan WhatsApp (Share via Intent API) -->
+      <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-2xl p-3.5 sm:p-4 text-white shadow-md border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 text-xl shrink-0">
+            <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-xs sm:text-sm font-bold text-white">Ringkasan Mingguan WhatsApp</h4>
+              <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950">Auto-Text</span>
+            </div>
+            <p class="text-[11px] text-emerald-200/90 mt-0.5">Generate teks rekap absensi 7 hari otomatis & bagikan langsung ke grup WhatsApp asatidz.</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="openWeeklyWhatsAppModal()" 
+          class="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5 shrink-0 active:scale-95"
+        >
+          <i class="fa-brands fa-whatsapp text-sm"></i> Bagikan ke WhatsApp
+        </button>
+      </div>
+
+      <!-- Komponen Kalender Ringkas Visualisasi Kehadiran Bulanan -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-days text-emerald-600"></i> Kalender Riwayat Absensi Bulanan
+            </h3>
+            <p class="text-[11px] text-slate-500">Visualisasi status kelengkapan catatan absensi harian santri.</p>
+          </div>
+          
+          <!-- Kontrol Navigasi Bulan -->
+          <div class="flex items-center gap-1 self-start sm:self-auto bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <button 
+              type="button" 
+              onclick="changeCalendarMonth(-1)" 
+              class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 shadow-xs transition"
+              title="Bulan Sebelumnya"
+            >
+              <i class="fa-solid fa-chevron-left text-[10px]"></i>
+            </button>
+            <span id="calendarCurrentMonthYear" class="text-xs font-bold text-slate-800 px-2 min-w-[120px] text-center">
+              September 2026
+            </span>
+            <button 
+              type="button" 
+              onclick="changeCalendarMonth(1)" 
+              class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 shadow-xs transition"
+              title="Bulan Berikutnya"
+            >
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+            <button 
+              type="button" 
+              onclick="resetCalendarToCurrentMonth()" 
+              class="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition ml-1"
+            >
+              Hari Ini
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend Indikator Titik Warna -->
+        <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-50/80 rounded-xl border border-slate-200/70 mb-3 text-[11px]">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="font-semibold text-slate-600 text-[10px]">Status:</span>
+            <span class="inline-flex items-center gap-1.5 text-slate-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shadow-xs"></span> Lengkap
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-slate-700">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200 shadow-xs"></span> Parsial
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-slate-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span> Belum Ada Data
+            </span>
+          </div>
+          <div class="text-[10px] text-slate-500">
+            <i class="fa-solid fa-hand-pointer mr-0.5 text-emerald-600"></i> Klik tanggal untuk melihat rincian
+          </div>
+        </div>
+
+        <!-- Calendar Grid Container -->
+        <div id="calendarMonthlyGridContainer" class="w-full"></div>
+
+        <!-- Panel Detail Tanggal Terpilih -->
+        <div id="calendarSelectedDateDetail" class="hidden mt-3 p-3.5 bg-gradient-to-br from-slate-50 to-emerald-50/40 rounded-xl border border-emerald-200 transition"></div>
+      </div>
+
+      <!-- Log History Table & Search -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Log Riwayat Absensi Terkini
+          </h3>
+          <div class="flex items-center space-x-2">
+            <span id="logCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">0 Data</span>
+            <button onclick="openWeeklyWhatsAppModal()" class="text-xs bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-2.5 py-1 rounded-xl font-bold border border-emerald-300 transition inline-flex items-center gap-1">
+              <i class="fa-brands fa-whatsapp text-emerald-600"></i> Rekap WA
+            </button>
+            <button onclick="exportHistoryToCSV()" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-2.5 py-1 rounded-xl font-semibold border border-emerald-200 transition inline-flex items-center gap-1">
+              <i class="fa-solid fa-file-csv"></i> Unduh CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Lanjutan Riwayat Absensi (Ustadz, Santri, & Pencarian) -->
+        <div class="bg-slate-50/90 rounded-2xl p-3 sm:p-3.5 border border-slate-200/90 mb-3 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-sliders text-emerald-600"></i> Filter Lanjutan Riwayat Absensi
+            </span>
+            <button 
+              type="button" 
+              onclick="resetHistoryFiltersOnly()" 
+              id="btnResetHistoryFilters"
+              class="text-[11px] text-slate-500 hover:text-emerald-700 font-semibold transition hidden flex items-center gap-1"
+              title="Reset filter ustadz, santri, dan pencarian"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Reset Filter Riwayat
+            </button>
+          </div>
+
+          <!-- Controls Grid: Dropdown Ustadz, Dropdown Santri, & Pencarian -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <!-- Dropdown Filter Ustadz Spesifik -->
+            <div class="sm:col-span-4">
+              <label class="block text-[10px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-chalkboard-user text-emerald-600"></i> Filter Ustadz / Pengajar
+              </label>
+              <div class="relative">
+                <select
+                  id="filterHistoryUstadz"
+                  onchange="onFilterHistoryUstadzChange()"
+                  class="w-full pl-2.5 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer appearance-none shadow-2xs"
+                >
+                  <option value="all">Semua Ustadz / Pengajar</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dropdown Filter Santri Spesifik -->
+            <div class="sm:col-span-4">
+              <label class="block text-[10px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-user-graduate text-emerald-600"></i> Filter Nama Santri Spesifik
+              </label>
+              <div class="relative">
+                <select
+                  id="filterHistorySantri"
+                  onchange="onFilterHistorySantriChange()"
+                  class="w-full pl-2.5 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer appearance-none shadow-2xs"
+                >
+                  <option value="all">Semua Santri</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pencarian Kata Kunci / Kitab / Catatan -->
+            <div class="sm:col-span-4">
+              <label class="block text-[10px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-magnifying-glass text-emerald-600"></i> Kata Kunci / Kitab
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  id="inputSearchLogs"
+                  oninput="onSearchLogsInput()"
+                  placeholder="Ketik kitab, materi, catatan..."
+                  class="w-full pl-3 pr-8 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition shadow-2xs"
+                />
+                <button
+                  id="btnClearSearchLogs"
+                  type="button"
+                  onclick="clearLogSearch()"
+                  class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 transition"
+                  title="Hapus kata kunci"
+                >
+                  <i class="fa-solid fa-circle-xmark text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Filter Pills Container -->
+          <div id="activeHistoryFilterPills" class="hidden flex flex-wrap items-center gap-1.5 pt-1 text-[11px]"></div>
+        </div>
+
+        <div id="attendanceHistoryContainer" class="space-y-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: INPUT ABSENSI TAKHOSSUS -->
+    <section id="tabTakhossus" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs"><i class="fa-solid fa-user-graduate"></i></span>
+              Input Absensi Santri Takhossus
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Pilih Ustadz untuk memuat daftar santri sesuai tingkatan otomatis.</p>
+          </div>
+          <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">TDK</span>
+        </div>
+
+        <form id="formTakhossus" novalidate onsubmit="handleTakhossusSubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">a. Tanggal Absensi (Otomatis Hari Ini) <span class="text-red-500">*</span></label>
+              <input type="date" id="takhossusTanggal" required class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Hari & Sesi Waktu</label>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="takhossusHari" readonly placeholder="Hari" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-100 text-slate-600 font-medium" />
+                <select id="takhossusSesi" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                  <option value="Sore">Sesi Sore (30 Menit)</option>
+                  <option value="Malam">Sesi Malam</option>
+                  <option value="Pagi">Sesi Pagi</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">b. Pembimbing / Ustadz <span class="text-red-500">*</span></label>
+              <select id="takhossusUstadz" required onchange="onTakhossusUstadzChange()" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-emerald-50/50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                <option value="">-- Pilih Pembina / Ustadz --</option>
+              </select>
+              <div id="takhossusTingkatBadge" class="text-[11px] text-emerald-700 font-semibold mt-1 hidden flex items-center justify-between flex-wrap gap-1">
+                <span><i class="fa-solid fa-layer-group"></i> Tingkatan: <span id="takhossusTingkatText">-</span></span>
+                <span class="bg-emerald-100/90 text-emerald-900 border border-emerald-300/80 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                  <i class="fa-solid fa-users text-emerald-700 mr-1"></i>Kapasitas Terdaftar: <span id="takhossusKapasitasText">0</span> Santri
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">c. Kitab Kajian <span class="text-red-500">*</span></label>
+              <select id="takhossusKitab" required class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                <option value="">-- Pilih Nama Kitab --</option>
+                <option value="Audohul Manahij">Audohul Manahij</option>
+                <option value="Matan Taqrib">Matan Taqrib</option>
+                <option value="Amstilah Tashrifiyah">Amstilah Tashrifiyah / Amtsilah</option>
+                <option value="Jurumiyah">Jurumiyah</option>
+                <option value="Fathul Qarib">Fathul Qarib</option>
+                <option value="Imrithi">Imrithi</option>
+                <option value="Aqidatul Awwam">Aqidatul Awwam</option>
+                <option value="Muhadatsah">Muhadatsah</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Materi / Bab / Halaman Kajian</label>
+            <input type="text" id="takhossusMateri" placeholder="Contoh: Bab Wudhu, Hal 12-15" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+          </div>
+
+          <!-- Daftar Santri -->
+          <div class="mt-4 border border-emerald-200/80 rounded-2xl p-4 bg-emerald-50/20">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <i class="fa-solid fa-list-check text-emerald-600"></i> Daftar Santri Takhossus
+                </h3>
+                <p class="text-[11px] text-slate-500">Tentukan status kehadiran masing-masing santri:</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="setAllTakhossusStatus('H')" class="text-[11px] px-2 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-lg hover:bg-emerald-200 transition">Semua Hadir (H)</button>
+              </div>
+            </div>
+
+            <div id="takhossusSantriListContainer" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+              <div class="text-center py-6 text-slate-400 text-xs">
+                <i class="fa-solid fa-user-clock text-2xl mb-1.5 text-slate-300"></i>
+                <p>Silakan pilih <b>Pembina / Ustadz</b> di atas untuk menampilkan daftar santri.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-emerald-200/60 text-center">
+              <div id="rekapHadirCard" class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm transition">
+                <div class="text-[10px] text-emerald-700 font-bold">HADIR (H)</div>
+                <div id="rekapHadirCount" class="text-base font-extrabold text-emerald-700">0</div>
+              </div>
+              <div class="bg-white p-2 rounded-xl border border-blue-200 shadow-sm">
+                <div class="text-[10px] text-blue-700 font-bold">IZIN (I)</div>
+                <div id="rekapIzinCount" class="text-base font-extrabold text-blue-700">0</div>
+              </div>
+              <div class="bg-white p-2 rounded-xl border border-amber-200 shadow-sm">
+                <div class="text-[10px] text-amber-700 font-bold">SAKIT (S)</div>
+                <div id="rekapSakitCount" class="text-base font-extrabold text-amber-700">0</div>
+              </div>
+              <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm">
+                <div class="text-[10px] text-rose-700 font-bold">ALFA (A)</div>
+                <div id="rekapAlfaCount" class="text-base font-extrabold text-rose-700">0</div>
+              </div>
+            </div>
+
+            <!-- Santri Tambahan / Luar Rombel & Live Indicator -->
+            <div class="mt-3 pt-2.5 border-t border-emerald-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <label for="takhossusSantriTambahan" class="text-xs font-semibold text-slate-700">Santri Hadir Tambahan / Luar Kelas:</label>
+                <div class="relative w-20">
+                  <input type="number" id="takhossusSantriTambahan" min="0" value="0" oninput="updateTakhossusCounts()" class="w-full text-xs font-bold text-center rounded-lg border border-slate-200 py-1 px-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                </div>
+                <span class="text-[10px] text-slate-400 italic">(santri titipan/gabung)</span>
+              </div>
+              <div id="takhossusCapacityStatusBadge" class="text-[11px] font-bold text-slate-600"></div>
+            </div>
+
+            <!-- Banner Peringatan Kelebihan Kuota Real-time Takhossus -->
+            <div id="takhossusCapacityAlert" class="hidden mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 transition animate-pulse">
+              <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5 shrink-0"></i>
+              <div class="flex-1 min-w-0">
+                <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                  <span>Peringatan Kuota Terlampaui: Jumlah Santri Melebihi Kapasitas Kelas!</span>
+                </div>
+                <p id="takhossusCapacityAlertMsg" class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                  Jumlah santri hadir yang dimasukkan melebihi kapasitas kelas terdaftar.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Foto Kamera Langsung -->
+          <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
+            <label class="block text-xs font-semibold text-slate-800 mb-1">
+              d. Foto Bukti Kajian <span class="text-emerald-700 font-bold">(Wajib Kamera Langsung)</span> <span class="text-red-500">*</span>
+            </label>
+            <p class="text-[11px] text-slate-500 mb-3">Foto harus diambil langsung menggunakan kamera HP/perangkat saat kajian berlangsung (tidak diizinkan impor dari galeri).</p>
+
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <input
+                type="file"
+                id="takhossusCameraInput"
+                accept="image/*"
+                capture="environment"
+                onchange="handleCameraCapture(this, 'takhossus')"
+                class="hidden"
+              />
+              <button
+                type="button"
+                onclick="document.getElementById('takhossusCameraInput').click()"
+                class="w-full sm:w-auto px-4 py-2.5 bg-emerald-800 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-900 transition flex items-center justify-center gap-2 active:scale-95"
+              >
+                <i class="fa-solid fa-camera text-sm text-amber-300"></i> Ambil Foto Kamera Langsung
+              </button>
+              <button
+                type="button"
+                id="takhossusRetakeBtn"
+                onclick="document.getElementById('takhossusCameraInput').click()"
+                class="hidden text-xs text-slate-600 font-semibold hover:text-emerald-700 underline"
+              >
+                Foto Ulang
+              </button>
+            </div>
+
+            <div id="takhossusPhotoPreviewContainer" class="mt-3 hidden">
+              <div class="relative inline-block border-2 border-emerald-500 rounded-xl overflow-hidden shadow-md max-w-xs">
+                <img id="takhossusPhotoPreview" src="" alt="Bukti Foto Kajian" class="max-h-48 object-cover w-full" />
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-0.5 px-2 flex items-center justify-between">
+                  <span><i class="fa-solid fa-camera mr-1"></i> Kamera Terverifikasi</span>
+                  <span id="takhossusPhotoTime"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+            <textarea id="takhossusCatatan" rows="2" placeholder="Tuliskan catatan kajian jika ada..." class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              id="btnSubmitTakhossus"
+              class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 text-white font-bold rounded-xl shadow-lg hover:from-emerald-700 hover:to-teal-800 transition active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+            >
+              <i class="fa-solid fa-paper-plane"></i> Simpan & Kirim Absensi Takhossus
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 3: INPUT ABSENSI ANGKATAN -->
+    <section id="tabReguler" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs"><i class="fa-solid fa-users"></i></span>
+              Input Absensi Kajian Kitab Per-Angkatan
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Pilih Ustadz, maka Hari dan Kitab terisi otomatis sesuai jadwal angkatan.</p>
+          </div>
+          <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">Angkatan</span>
+        </div>
+
+        <form id="formReguler" novalidate onsubmit="handleRegulerSubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">a. Tanggal Absensi (Otomatis Hari Ini) <span class="text-red-500">*</span></label>
+              <input type="date" id="regulerTanggal" required class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Hari (Otomatis Terisi)</label>
+              <input type="text" id="regulerHari" readonly placeholder="Hari Terisi Otomatis" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-100 text-slate-700 font-bold" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">b. Pengajar / Ustadz Kajian Angkatan <span class="text-red-500">*</span></label>
+            <select id="regulerUstadz" required onchange="onRegulerUstadzChange()" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-teal-50/50 text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none">
+              <option value="">-- Pilih Pengajar / Ustadz --</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 p-3.5 bg-teal-50/30 rounded-2xl border border-teal-200/60">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tingkat / Kelas</label>
+              <input type="text" id="regulerKelas" readonly placeholder="Kelas Terisi Otomatis" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-slate-800 font-semibold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Kapasitas Terdaftar</label>
+              <div class="w-full text-xs rounded-xl border border-teal-200/70 p-2 bg-teal-50/60 text-teal-900 font-extrabold flex items-center gap-1.5 h-[34px]">
+                <i class="fa-solid fa-users text-teal-600 text-[11px]"></i>
+                <span id="regulerKapasitasBadge">-</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nama Kitab</label>
+              <input type="text" id="regulerKitab" readonly placeholder="Kitab Terisi Otomatis" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-emerald-800 font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Waktu & Tempat</label>
+              <input type="text" id="regulerWaktuTempat" readonly placeholder="Waktu/Tempat" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white text-slate-700 font-medium" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">Jumlah Santri / Jamaah Hadir <span class="text-red-500">*</span></label>
+                <span id="regulerCapacityStatusBadge" class="text-[11px] font-bold text-slate-500"></span>
+              </div>
+              <input type="number" id="regulerJumlah" min="0" required placeholder="Contoh: 25" oninput="validateRegulerCapacityRealtime()" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none transition" />
+              
+              <!-- Banner Peringatan Kelebihan Kuota Real-time Angkatan -->
+              <div id="regulerCapacityAlert" class="hidden mt-2 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-start gap-2.5 transition animate-pulse">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5 shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                    <span>Peringatan Kuota Terlampaui: Jumlah Santri Melebihi Kapasitas Kelas!</span>
+                  </div>
+                  <p id="regulerCapacityAlertMsg" class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                    Jumlah santri/jamaah yang dimasukkan melebihi kapasitas kelas terdaftar.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Materi / Bab Kajian</label>
+              <input type="text" id="regulerMateri" placeholder="Contoh: Fasal Syarat Shalat" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <!-- Input Foto Kamera Langsung -->
+          <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
+            <label class="block text-xs font-semibold text-slate-800 mb-1">
+              c. Foto Bukti Kajian <span class="text-teal-700 font-bold">(Wajib Kamera Langsung)</span> <span class="text-red-500">*</span>
+            </label>
+            <p class="text-[11px] text-slate-500 mb-3">Foto harus diambil langsung menggunakan kamera perangkat (tidak diizinkan impor file dari galeri).</p>
+
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+              <input
+                type="file"
+                id="regulerCameraInput"
+                accept="image/*"
+                capture="environment"
+                onchange="handleCameraCapture(this, 'reguler')"
+                class="hidden"
+              />
+              <button
+                type="button"
+                onclick="document.getElementById('regulerCameraInput').click()"
+                class="w-full sm:w-auto px-4 py-2.5 bg-teal-800 text-white text-xs font-bold rounded-xl shadow hover:bg-teal-900 transition flex items-center justify-center gap-2 active:scale-95"
+              >
+                <i class="fa-solid fa-camera text-sm text-amber-300"></i> Ambil Foto Kamera Langsung
+              </button>
+              <button
+                type="button"
+                id="regulerRetakeBtn"
+                onclick="document.getElementById('regulerCameraInput').click()"
+                class="hidden text-xs text-slate-600 font-semibold hover:text-teal-700 underline"
+              >
+                Foto Ulang
+              </button>
+            </div>
+
+            <div id="regulerPhotoPreviewContainer" class="mt-3 hidden">
+              <div class="relative inline-block border-2 border-teal-500 rounded-xl overflow-hidden shadow-md max-w-xs">
+                <img id="regulerPhotoPreview" src="" alt="Bukti Foto Kajian Angkatan" class="max-h-48 object-cover w-full" />
+                <div class="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] py-0.5 px-2 flex items-center justify-between">
+                  <span><i class="fa-solid fa-camera mr-1"></i> Kamera Terverifikasi</span>
+                  <span id="regulerPhotoTime"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+            <textarea id="regulerCatatan" rows="2" placeholder="Catatan khusus atau kendala kajian..." class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              id="btnSubmitReguler"
+              class="w-full py-3.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:from-teal-700 hover:to-emerald-800 transition active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+            >
+              <i class="fa-solid fa-paper-plane"></i> Simpan & Kirim Absensi Angkatan
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 4: REKAPITULASI & ANALISIS KEHADIRAN KAJIAN -->
+    <section id="tabFilterGuru" class="tab-content hidden space-y-4">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-pie"></i></span>
+              Rekapitulasi & Analisis Kehadiran Kajian
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Grafik perbandingan sesi kehadiran bulanan, analisis aktivitas asatidz, dan arsip dokumen.</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openMonthlyPdfExportModal()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl font-bold shadow-xs transition inline-flex items-center gap-1.5 animate-pulse-once">
+              <i class="fa-solid fa-file-pdf text-amber-100"></i> Laporan Bulanan PDF
+            </button>
+            <button onclick="openWeeklyWhatsAppModal()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-bold shadow-xs transition inline-flex items-center gap-1.5">
+              <i class="fa-brands fa-whatsapp text-emerald-200"></i> Rekap WA Mingguan
+            </button>
+            <button onclick="exportTeacherRecapToPDF()" class="text-xs bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-1.5 rounded-xl font-bold shadow-xs transition inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-print text-amber-300"></i> Cetak Filter Saat Ini
+            </button>
+            <button onclick="exportTeacherRecapToCSV()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl font-bold border border-slate-200 transition inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel/CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- KOMPONEN GRAFIK BATANG PERBANDINGAN JUMLAH SESI KEHADIRAN BULANAN   -->
+        <!-- =================================================================== -->
+        <div class="mb-6 p-4 sm:p-5 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl text-white shadow-lg border border-emerald-500/30">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-white/10">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 text-sm">
+                  <i class="fa-solid fa-chart-column"></i>
+                </span>
+                <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <span>Grafik Perbandingan Sesi Kehadiran Bulanan</span>
+                  <span class="text-[9px] bg-emerald-400 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">Chart.js</span>
+                </h3>
+              </div>
+              <p class="text-xs text-emerald-200/90 mt-1">Pemantauan visual tren aktivitas kajian & perbandingan sesi bulanan (Takhossus vs Angkatan).</p>
+            </div>
+
+            <!-- Kontrol Filter Khusus Grafik Bulanan & Tombol Unduh PDF Bulanan -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1.5 bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/10">
+                <label for="monthlyChartYearFilter" class="text-[11px] text-emerald-300 font-semibold"><i class="fa-solid fa-calendar text-[10px] mr-0.5"></i> Tahun:</label>
+                <select 
+                  id="monthlyChartYearFilter" 
+                  onchange="renderMonthlyAttendanceChart()" 
+                  class="text-xs bg-slate-900 text-white rounded-lg px-2 py-1 border border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                >
+                  <option value="2026/2027">Tahun Ajaran 2026/2027</option>
+                  <option value="2026">Tahun 2026</option>
+                  <option value="2027">Tahun 2027</option>
+                  <option value="all">Semua Tahun Tercatat</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-1.5 bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/10">
+                <label for="monthlyChartModeSelect" class="text-[11px] text-emerald-300 font-semibold"><i class="fa-solid fa-bars-staggered text-[10px] mr-0.5"></i> Mode:</label>
+                <select 
+                  id="monthlyChartModeSelect" 
+                  onchange="renderMonthlyAttendanceChart()" 
+                  class="text-xs bg-slate-900 text-white rounded-lg px-2 py-1 border border-emerald-500/40 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                >
+                  <option value="stacked">Bertumpuk (Stacked)</option>
+                  <option value="grouped">Berdampingan (Grouped)</option>
+                </select>
+              </div>
+
+              <button 
+                type="button" 
+                onclick="openMonthlyPdfExportModal()" 
+                class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl shadow-md transition inline-flex items-center gap-1.5"
+                title="Unduh Laporan Rekapitulasi Bulanan Lengkap dalam format PDF"
+              >
+                <i class="fa-solid fa-file-arrow-down"></i> Unduh Laporan Bulanan (PDF)
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Kartu Ringkasan Metrik Tren Bulanan -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
+              <div class="text-[10px] text-emerald-200 font-semibold uppercase flex items-center justify-between">
+                <span>Total Sesi Periode</span>
+                <i class="fa-solid fa-clipboard-list text-emerald-400"></i>
+              </div>
+              <div class="text-lg sm:text-xl font-extrabold text-white mt-1" id="metricMonthlyTotalSesi">0 Sesi</div>
+              <div class="text-[10px] text-emerald-300/80 mt-0.5" id="metricMonthlyTakhossusRatio">0 Tak • 0 Angk</div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
+              <div class="text-[10px] text-emerald-200 font-semibold uppercase flex items-center justify-between">
+                <span>Rata-rata Sesi / Bulan</span>
+                <i class="fa-solid fa-calculator text-emerald-400"></i>
+              </div>
+              <div class="text-lg sm:text-xl font-extrabold text-emerald-300 mt-1" id="metricMonthlyAvgSesi">0 Sesi/Bln</div>
+              <div class="text-[10px] text-emerald-300/80 mt-0.5" id="metricMonthlyActiveMonths">0 Bulan Aktif</div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
+              <div class="text-[10px] text-amber-200 font-semibold uppercase flex items-center justify-between">
+                <span>Puncak Aktivitas</span>
+                <i class="fa-solid fa-fire text-amber-400"></i>
+              </div>
+              <div class="text-base sm:text-lg font-bold text-amber-300 mt-1 truncate" id="metricMonthlyPeakMonth">-</div>
+              <div class="text-[10px] text-amber-200/80 mt-0.5" id="metricMonthlyPeakCount">0 Sesi Terbanyak</div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
+              <div class="text-[10px] text-teal-200 font-semibold uppercase flex items-center justify-between">
+                <span>Akumulasi Santri</span>
+                <i class="fa-solid fa-users text-teal-300"></i>
+              </div>
+              <div class="text-lg sm:text-xl font-extrabold text-teal-300 mt-1" id="metricMonthlyTotalSantri">0 Santri</div>
+              <div class="text-[10px] text-teal-200/80 mt-0.5" id="metricMonthlyAvgSantriPerSession">Rerata: 0 / Sesi</div>
+            </div>
+          </div>
+
+          <!-- Opsi Toggle Garis Tren & Program -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 mb-3 px-1 text-xs">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="inline-flex items-center gap-1.5 text-xs text-white">
+                <span class="w-3 h-3 rounded-md bg-emerald-500 inline-block shadow-xs"></span>
+                <span class="font-bold text-emerald-300">Sesi Takhossus</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs text-white">
+                <span class="w-3 h-3 rounded-md bg-teal-400 inline-block shadow-xs"></span>
+                <span class="font-bold text-teal-300">Kajian Angkatan</span>
+              </span>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer text-amber-300 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                <input 
+                  type="checkbox" 
+                  id="monthlyChartShowTrendLine" 
+                  checked 
+                  onchange="renderMonthlyAttendanceChart()" 
+                  class="rounded text-amber-500 focus:ring-amber-400 accent-amber-500" 
+                />
+                <span class="text-[11px] font-bold"><i class="fa-solid fa-chart-line text-[10px] mr-0.5"></i> Garis Tren Santri Hadir (Dual-Axis)</span>
+              </label>
+            </div>
+
+            <div class="text-[11px] text-emerald-300/80 flex items-center gap-1">
+              <i class="fa-regular fa-hand-pointer text-emerald-400 animate-pulse"></i>
+              <span>Klik batang bulan untuk filter cepat</span>
+            </div>
+          </div>
+
+          <!-- Canvas Chart.js Grafik Batang Bulanan -->
+          <div class="relative w-full h-64 sm:h-80 bg-slate-950/60 rounded-2xl p-2.5 border border-white/10 shadow-inner">
+            <canvas id="monthlyAttendanceBarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Filter Detail Periode & Ustadz untuk Tabel dan Rekap -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200 mb-4">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Dari Tanggal</label>
+            <input type="date" id="guruFilterStartDate" onchange="renderTeacherAnalytics()" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
+            <input type="date" id="guruFilterEndDate" onchange="renderTeacherAnalytics()" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Pilih Ustadz Spesifik (Opsional)</label>
+            <select id="guruFilterSelect" onchange="renderTeacherAnalytics()" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none">
+              <option value="all">-- Semua Ustadz / Guru --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sub Tabs Navigasi Rekapitulasi -->
+        <div class="flex border-b border-slate-200 mb-4 gap-1 overflow-x-auto">
+          <button id="btnSubTabTeacherSummary" onclick="switchTeacherSubTab('summary')" class="py-2.5 px-4 text-xs font-bold border-b-2 border-emerald-600 text-emerald-700 whitespace-nowrap">
+            <i class="fa-solid fa-list-ol mr-1"></i> a. Rekap Kehadiran Asatidz
+          </button>
+          <button id="btnSubTabTeacherChart" onclick="switchTeacherSubTab('chart')" class="py-2.5 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap">
+            <i class="fa-solid fa-chart-column mr-1"></i> b. Grafik Sesi per Ustadz
+          </button>
+          <button id="btnSubTabTeacherDaily" onclick="switchTeacherSubTab('daily')" class="py-2.5 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap">
+            <i class="fa-solid fa-calendar-day mr-1"></i> c. Daftar Guru Hadir per Tanggal
+          </button>
+        </div>
+
+        <!-- Sub Tab 1: Ringkasan List Kehadiran Guru -->
+        <div id="subTabTeacherSummary" class="space-y-3">
+          <div id="teacherSummaryContainer" class="space-y-2"></div>
+        </div>
+
+        <!-- Sub Tab 2: Visualisasi Grafik Kehadiran Ustadz -->
+        <div id="subTabTeacherChart" class="hidden space-y-3">
+          <div class="p-4 bg-gradient-to-br from-slate-50 to-emerald-50/30 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-chart-column text-emerald-600"></i> Visualisasi Grafik Kehadiran per Ustadz
+                </h3>
+                <p class="text-[11px] text-slate-500">Perbandingan total sesi mengajar Takhossus vs Kajian Angkatan masing-masing pengajar.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Takhossus
+                </span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-full">
+                  <span class="w-2 h-2 rounded-full bg-teal-500"></span> Angkatan
+                </span>
+              </div>
+            </div>
+            <div class="relative w-full h-64 sm:h-72">
+              <canvas id="teacherAttendanceBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub Tab 3: Daftar Hadir Harian per Tanggal -->
+        <div id="subTabTeacherDaily" class="hidden space-y-3">
+          <div id="teacherDailyContainer" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: ADMIN MASTER DATA -->
+    <section id="tabAdmin" class="tab-content hidden space-y-4">
+      
+      <!-- BANNER NOTIFIKASI OTOMATIS ANOMALI DATA -->
+      <div id="adminAnomalyAlertBanner" class="hidden"></div>
+
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 flex-wrap gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs"><i class="fa-solid fa-sliders"></i></span>
+              Menu Manajemen Master Data & Audit Admin
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Monitoring anomali data, kelola master santri (upload Excel), jadwal takhossus, & jadwal angkatan.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="runDataAnomalyCheck(true)" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl font-bold border border-slate-200 transition inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-emerald-600"></i> Scan Integritas
+            </button>
+            <button onclick="resetAllMasterDataToDefault()" class="text-[11px] text-rose-600 font-bold hover:underline py-1.5">
+              <i class="fa-solid fa-rotate-left"></i> Reset ke Standar
+            </button>
+          </div>
+        </div>
+
+        <!-- Sesi Admin Aktif Bar -->
+        <div id="adminSessionActiveBar" class="p-2.5 px-4 mb-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between text-xs shadow-sm border border-slate-700">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-medium text-slate-300">Hak Akses:</span>
+            <span class="font-bold text-amber-300" id="adminLoggedInUsername">Administrator</span>
+            <span class="text-[10px] bg-emerald-800/90 text-emerald-200 px-2 py-0.5 rounded-full font-bold border border-emerald-600/40">Sesi Terotentikasi</span>
+          </div>
+          <button type="button" onclick="logoutAdmin()" class="px-3 py-1.5 bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-95" title="Kunci dan keluar dari sesi admin">
+            <i class="fa-solid fa-lock"></i> Kunci Akses / Logout
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4 pb-2 border-b border-slate-100">
+          <button onclick="switchAdminSection('settings')" id="adminPill_settings" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-building-columns text-amber-300"></i>
+            <span>1. Pengaturan Lembaga & Kop</span>
+          </button>
+          <button onclick="switchAdminSection('ustadz')" id="adminPill_ustadz" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-chalkboard-user"></i>
+            <span>2. Guru & Asatidz</span>
+          </button>
+          <button onclick="switchAdminSection('jadwalTakhossus')" id="adminPill_jadwalTakhossus" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>3. Jadwal Takhossus</span>
+          </button>
+          <button onclick="switchAdminSection('jadwalAngkatan')" id="adminPill_jadwalAngkatan" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>4. Jadwal Angkatan</span>
+          </button>
+          <button onclick="switchAdminSection('anomali')" id="adminPill_anomali" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            <span>5. Deteksi Anomali</span>
+            <span id="adminAnomalyBadgeCount" class="px-1.5 py-0.2 text-[10px] bg-rose-700 text-white rounded-full font-extrabold hidden">0</span>
+          </button>
+          <button onclick="switchAdminSection('santri')" id="adminPill_santri" class="admin-pill px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-users-gear"></i>
+            <span>6. Data Santri / Excel</span>
+          </button>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 1: PENGATURAN LEMBAGA, LOGO, KOP PDF, & PENANDATANGAN   -->
+        <!-- ============================================================= -->
+        <div id="adminSection_settings" class="admin-section space-y-5">
+          
+          <!-- Banner Pengantar -->
+          <div class="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50/50 rounded-2xl border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                <i class="fa-solid fa-gear text-emerald-700"></i> Pengaturan Umum & Identitas Lembaga
+              </h3>
+              <p class="text-xs text-slate-600 mt-0.5">Kelola nama instansi, logo aplikasi, alamat, format kop laporan PDF, serta pejabat penandatangan resmi.</p>
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+              <button type="button" onclick="saveInstitutionSettings()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-floppy-disk text-amber-300"></i> Simpan Pengaturan
+              </button>
+            </div>
+          </div>
+
+          <!-- KARTU 1: NAMA LEMBAGA & LOGO APLIKASI -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold">1</span>
+                Nama Lembaga & Logo Aplikasi
+              </h4>
+              <span class="text-[10px] text-slate-400">Tampil di Header, Beranda, & Cetak</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Nama Utama Lembaga / Pondok <span class="text-rose-500">*</span></label>
+                <input type="text" id="cfgNamaLembaga" oninput="updateLiveKopPreview()" placeholder="cth: Pondok Modern Al-Aqsha" class="w-full text-xs font-semibold rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Sub-Unit / Program Pengajian</label>
+                <input type="text" id="cfgSubLembaga" oninput="updateLiveKopPreview()" placeholder="cth: Lembaga Pendidikan dan Pengajian Kutubutturats" class="w-full text-xs font-semibold rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Tagline / Deskripsi Singkat</label>
+                <input type="text" id="cfgTagline" placeholder="cth: Takhossus & Kajian Angkatan Santri" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Tahun Ajaran Aktif</label>
+                <input type="text" id="cfgTahunAjaran" placeholder="cth: 2026-2027" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              </div>
+            </div>
+
+            <!-- Pengaturan Logo Lembaga -->
+            <div class="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+              <div class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-image text-emerald-600"></i> Logo Resmi Lembaga
+              </div>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <!-- Preview Box -->
+                <div class="flex items-center gap-3">
+                  <div id="cfgLogoPreviewContainer" class="w-16 h-16 rounded-2xl bg-white border-2 border-dashed border-emerald-300 flex items-center justify-center overflow-hidden shadow-xs relative flex-shrink-0">
+                    <i id="cfgLogoPreviewIcon" class="fa-solid fa-book-quran text-amber-500 text-2xl"></i>
+                    <img id="cfgLogoPreviewImg" src="" alt="Pratinjau Logo" class="w-full h-full object-contain hidden" />
+                  </div>
+                  <div class="text-[11px] text-slate-600">
+                    <div class="font-bold text-slate-800" id="cfgLogoStatusText">Menggunakan Ikon Bawaan</div>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Format: PNG, JPG, JPEG, SVG, atau WebP (disarankan latar transparan).</p>
+                  </div>
+                </div>
+
+                <!-- Action Upload / Input URL -->
+                <div class="flex-1 w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input type="file" id="cfgLogoFileInput" accept="image/*" onchange="handleLogoFileUpload(event)" class="hidden" />
+                  <button type="button" onclick="document.getElementById('cfgLogoFileInput').click()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs">
+                    <i class="fa-solid fa-upload"></i> Unggah Logo dari HP/PC
+                  </button>
+                  <button type="button" onclick="resetLogoToDefaultIcon()" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs">
+                    <i class="fa-solid fa-rotate-left text-slate-400"></i> Pakai Ikon Standar
+                  </button>
+                </div>
+              </div>
+              <!-- Input URL Alternatif -->
+              <div class="pt-1">
+                <label class="block text-[10px] text-slate-500 font-medium mb-1">Atau masukkan URL gambar logo langsung:</label>
+                <input type="url" id="cfgLogoUrl" oninput="handleLogoUrlInput(this.value)" placeholder="https://contoh-domain.com/logo-al-aqsha.png" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTU 2: ALAMAT LEMBAGA & KONTAK RESMI -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center text-xs font-extrabold">2</span>
+                Alamat Lembaga & Kontak Resmi
+              </h4>
+              <span class="text-[10px] text-slate-400">Tercantum di Kop Laporan & PDF</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Alamat Lengkap Pondok / Lembaga <span class="text-rose-500">*</span></label>
+                <textarea id="cfgAlamatLembaga" rows="2" oninput="updateLiveKopPreview()" placeholder="cth: Jl. Menara Kudus, Kompleks Pesantren Al-Aqsha, Kudus, Jawa Tengah" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Kota / Domisili Lembaga <span class="text-rose-500">*</span></label>
+                <input type="text" id="cfgKotaLembaga" oninput="updateLiveKopPreview()" placeholder="cth: Kudus" class="w-full text-xs font-semibold rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+                <p class="text-[10px] text-slate-400 mt-0.5">Digunakan untuk titimangsa tanggal surat ("Kudus, 2 September 2026")</p>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Email Resmi</label>
+                <input type="email" id="cfgEmailLembaga" oninput="updateLiveKopPreview()" placeholder="cth: turatscorner.alaqsha@gmail.com" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">No. Telepon / WhatsApp Lembaga</label>
+                <input type="text" id="cfgTeleponLembaga" placeholder="cth: (0291) 431234 / 0812-3456-7890" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTU 3: KOP LAPORAN & DOKUMEN PDF -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-extrabold">3</span>
+                Format Kop Laporan & Dokumen PDF
+              </h4>
+              <span class="text-[10px] text-slate-400">Kustomisasi Teks Kop Surat</span>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Baris 1 Kop (Nama Instansi Utama - Huruf Kapital)</label>
+                <input type="text" id="cfgKopBaris1" oninput="updateLiveKopPreview()" placeholder="cth: PONDOK MODERN AL-AQSHA KUDUS" class="w-full text-xs font-bold uppercase rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Baris 2 Kop (Sub-Lembaga / Unit Pelaksana)</label>
+                <input type="text" id="cfgKopBaris2" oninput="updateLiveKopPreview()" placeholder="cth: LEMBAGA PENDIDIKAN DAN PENGAJIAN KUTUBUTTURATS" class="w-full text-xs font-semibold rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Baris 3 Kop (Keterangan Alamat, Telepon & Email)</label>
+                <input type="text" id="cfgKopBaris3" oninput="updateLiveKopPreview()" placeholder="cth: Pusat Kajian Turats & Pembinaan Bahasa Arab • Jl. Menara Kudus, Kompleks Pesantren Al-Aqsha • Email: turatscorner.alaqsha@gmail.com" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+              </div>
+              <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="cfgShowKopLogo" onchange="updateLiveKopPreview()" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300" />
+                <label for="cfgShowKopLogo" class="text-xs text-slate-700 font-medium cursor-pointer">Sertakan logo lembaga di sisi kiri kop surat PDF</label>
+              </div>
+            </div>
+
+            <!-- LIVE PREVIEW KOP SURAT PDF -->
+            <div class="mt-4 p-3 bg-slate-100/70 rounded-2xl border border-slate-200 space-y-2">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <span><i class="fa-solid fa-eye text-emerald-600 mr-1"></i> Pratinjau Tampilan Kop PDF (Real-time Preview)</span>
+                <span class="text-[9px] bg-white px-2 py-0.5 rounded border border-slate-200 font-semibold text-slate-600">Sesuai Format Cetak A4</span>
+              </div>
+              <div id="liveKopPreviewBox" class="p-4 bg-white rounded-xl border border-slate-300 shadow-inner">
+                <!-- Dynamically updated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTU 4: PIMPINAN & PENANDATANGAN RESMI -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center text-xs font-extrabold">4</span>
+                Pengasuh / Mudir & Koordinator Kutubutturats
+              </h4>
+              <span class="text-[10px] text-slate-400">Tanda Tangan Pengesahan Laporan</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Kolom Mudir / Pengasuh -->
+              <div class="p-3.5 bg-emerald-50/50 rounded-2xl border border-emerald-200/80 space-y-3">
+                <div class="flex items-center gap-2 text-emerald-950 font-bold text-xs pb-1 border-b border-emerald-200">
+                  <i class="fa-solid fa-user-shield text-emerald-700"></i> Pengasuh / Mudir Pondok Pesantren
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Nama Lengkap Mudir & Gelar <span class="text-rose-500">*</span></label>
+                  <input type="text" id="cfgNamaMudir" placeholder="cth: Dr. KH. Mukhlis Aliyudin, M.Ag." class="w-full text-xs font-bold rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Jabatan Resmi</label>
+                  <input type="text" id="cfgJabatanMudir" placeholder="cth: Mudir / Pengasuh Pondok Modern Al-Aqsha" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Keterangan / NIP / NIY</label>
+                  <input type="text" id="cfgNipMudir" placeholder="cth: Pengasuh Pondok Pesantren" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                </div>
+              </div>
+
+              <!-- Kolom Koordinator Kutubutturats -->
+              <div class="p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-200/80 space-y-3">
+                <div class="flex items-center gap-2 text-indigo-950 font-bold text-xs pb-1 border-b border-indigo-200">
+                  <i class="fa-solid fa-book-open-reader text-indigo-700"></i> Koordinator Kutubutturats
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Nama Lengkap Koordinator & Gelar <span class="text-rose-500">*</span></label>
+                  <input type="text" id="cfgNamaKoordinator" placeholder="cth: M. Rifqi, M.Ag." class="w-full text-xs font-bold rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Jabatan Resmi</label>
+                  <input type="text" id="cfgJabatanKoordinator" placeholder="cth: Koordinator Kutubutturats & Kurikulum" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-1">Keterangan / Bagian</label>
+                  <input type="text" id="cfgNipKoordinator" placeholder="cth: Bagian Pengajaran & Asatidz" class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTU 5: KEAMANAN & AKUN LOGIN ADMIN -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center text-xs font-extrabold">5</span>
+                Keamanan & Password Admin
+              </h4>
+              <span class="text-[10px] text-slate-400">Proteksi Akses Menu Administrator</span>
+            </div>
+
+            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+              <i class="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+              <div class="text-[11px]">
+                Menu Admin dan Pengaturan Lembaga ini diproteksi oleh kredensial login. Anda dapat memperbarui username serta password baru di bawah ini.
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Username Admin</label>
+                <input type="text" id="cfgAdminUsername" placeholder="admin" class="w-full text-xs font-semibold rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Password Baru</label>
+                <input type="password" id="cfgAdminNewPassword" placeholder="Biarkan kosong jika tidak diubah" class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Ulangi Password Baru</label>
+                <input type="password" id="cfgAdminConfirmPassword" placeholder="Ulangi password baru..." class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-500 focus:outline-none" />
+              </div>
+            </div>
+            <div class="flex items-center justify-end">
+              <button type="button" onclick="updateAdminPasswordOnly()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs">
+                <i class="fa-solid fa-key text-amber-400"></i> Perbarui Kredensial Login
+              </button>
+            </div>
+          </div>
+
+          <!-- KARTU 6: INTEGRASI GOOGLE SPREADSHEET & APPS SCRIPT -->
+          <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold">6</span>
+                Integrasi Google Spreadsheet & Cloud Apps Script
+              </h4>
+              <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold border border-emerald-200">Cloud Sync & Backup</span>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                  URL Google Apps Script Web App (Endpoint Penerima Data) <span class="text-rose-500">*</span>
+                </label>
+                <input 
+                  type="url" 
+                  id="cfgAppsScriptUrl" 
+                  placeholder="https://script.google.com/macros/s/AKfycbx.../exec" 
+                  class="w-full text-xs font-mono rounded-xl border border-slate-200 p-2.5 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                />
+                <p class="text-[10px] text-slate-500 mt-1">
+                  Masukkan Web App URL hasil deployment file <code>Code.gs</code> di Google Spreadsheet lembaga.
+                </p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 pt-1">
+                <button 
+                  type="button" 
+                  onclick="testConnection()" 
+                  class="px-3.5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <i class="fa-solid fa-plug-circle-check text-amber-300"></i> Tes Koneksi Spreadsheet
+                </button>
+                <button 
+                  type="button" 
+                  onclick="manualSync()" 
+                  class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <i class="fa-solid fa-rotate text-emerald-600"></i> Sinkronkan Antrean Tertunda
+                </button>
+              </div>
+
+              <!-- Petunjuk Langkah Integrasi (Accordion / Info Box) -->
+              <details class="mt-3 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 text-xs text-slate-700 group">
+                <summary class="font-bold text-slate-800 cursor-pointer flex items-center justify-between select-none">
+                  <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-book text-emerald-600"></i>
+                    <span>Panduan Langkah Integrasi ke Google Spreadsheet (Klik untuk membuka)</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+                </summary>
+                <div class="mt-3 space-y-2.5 text-[11px] leading-relaxed text-slate-600 border-t border-slate-200 pt-3">
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                    <div><b>Buka Google Spreadsheet Baru:</b> Masuk ke Google Drive menggunakan akun <i>turatscorner.alaqsha@gmail.com</i> atau akun lembaga, buat spreadsheet baru dengan nama misalnya <code>Database Absensi Kutubutturats Al-Aqsha</code>.</div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                    <div><b>Buka Apps Script:</b> Pada spreadsheet tersebut, klik menu <b>Ekstensi (Extensions)</b> &gt; <b>Apps Script</b>.</div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+                    <div><b>Salin Kode Backend:</b> Hapus semua kode default di editor, buka file <code>Code.gs</code> di aplikasi ini, salin seluruh kodenya dan tempelkan ke editor Apps Script.</div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">4</span>
+                    <div><b>Deploy Web App:</b> Klik tombol <b>Deploy (Terapkan)</b> di kanan atas &gt; pilih <b>New Deployment (Penerapan Baru)</b> &gt; pilih jenis <b>Web App</b>. Atur:
+                      <ul class="list-disc list-inside ml-2 mt-1 text-slate-600">
+                        <li><i>Execute as:</i> <b>Me (Saya)</b></li>
+                        <li><i>Who has access:</i> <b>Anyone (Siapa saja)</b> &larr; <i>Wajib agar ustadz dapat mengirim data tanpa login Google</i></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">5</span>
+                    <div><b>Otorisasi & Dapatkan URL:</b> Klik <b>Deploy</b>, izinkan akses akun Google (<i>Review Permissions &gt; Advanced &gt; Go to ... (unsafe) &gt; Allow</i>). Salin <b>Web App URL</b> yang berakhiran <code>/exec</code>.</div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px] shrink-0">6</span>
+                    <div><b>Hubungkan ke Aplikasi:</b> Tempelkan URL tersebut pada kolom di atas, lalu klik <b>Tes Koneksi Spreadsheet</b> dan <b>Simpan Semua Perubahan Pengaturan</b>. Selesai!</div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- FOOTER AKSI SIMPAN PENGATURAN -->
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <button type="button" onclick="resetInstitutionSettingsToDefault()" class="text-xs font-bold text-rose-600 hover:text-rose-800 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Reset Pengaturan ke Standar Awal
+            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="saveInstitutionSettings()" class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-2 active:scale-95">
+                <i class="fa-solid fa-check text-amber-300"></i> Simpan Semua Perubahan Pengaturan
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI A: PUSAT DETEKSI ANOMALI & INTEGRITAS DATA OTOMATIS     -->
+        <!-- ============================================================= -->
+        <div id="adminSection_anomali" class="admin-section hidden space-y-4">
+          
+          <!-- Ringkasan Metrik Integritas Data -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="p-3 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl text-white border border-slate-700">
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Riwayat Diperiksa</div>
+              <div class="text-lg sm:text-xl font-extrabold text-emerald-400 mt-0.5" id="anomalyStatTotalChecked">0 Sesi</div>
+              <div class="text-[9px] text-slate-400" id="anomalyStatTotalValid">0 Sesi Valid (100%)</div>
+            </div>
+            <div class="p-3 bg-rose-50 rounded-2xl border border-rose-200">
+              <div class="text-[10px] text-rose-800 font-bold uppercase tracking-wider">Anomali Terdeteksi</div>
+              <div class="text-lg sm:text-xl font-extrabold text-rose-700 mt-0.5" id="anomalyStatTotalFound">0</div>
+              <div class="text-[9px] text-rose-600 font-semibold" id="anomalyStatStatusSummary">Semua Data Normal</div>
+            </div>
+            <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+              <div class="text-[10px] text-amber-800 font-bold uppercase tracking-wider">Kelebihan Kuota</div>
+              <div class="text-lg sm:text-xl font-extrabold text-amber-700 mt-0.5" id="anomalyStatOverCapacity">0</div>
+              <div class="text-[9px] text-amber-600">Hadir > Kapasitas Kelas</div>
+            </div>
+            <div class="p-3 bg-indigo-50 rounded-2xl border border-indigo-200">
+              <div class="text-[10px] text-indigo-800 font-bold uppercase tracking-wider">Duplikasi Data</div>
+              <div class="text-lg sm:text-xl font-extrabold text-indigo-700 mt-0.5" id="anomalyStatDuplicates">0</div>
+              <div class="text-[9px] text-indigo-600">Sesi kembar di hari sama</div>
+            </div>
+          </div>
+
+          <!-- Toolbar Kontrol Anomali -->
+          <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                <i class="fa-solid fa-filter text-slate-400"></i> Filter:
+              </span>
+              <select id="anomalyFilterCategory" onchange="renderAnomalyList()" class="text-xs rounded-xl border border-slate-200 px-2.5 py-1.5 bg-white font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Semua Temuan Anomali</option>
+                <option value="over_capacity">Hanya Kelebihan Kuota</option>
+                <option value="duplicate">Hanya Duplikasi Data</option>
+                <option value="zero_or_empty">Data Kosong / Tidak Lengkap</option>
+                <option value="future_date">Tanggal Tidak Sesuai</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+              <button 
+                type="button" 
+                onclick="autoCleanAllDuplicateRecords()" 
+                id="btnCleanDuplicates"
+                class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> Bersihkan Duplikat Otomatis
+              </button>
+              <button 
+                type="button" 
+                onclick="exportAnomalyAuditToCSV()" 
+                class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+              >
+                <i class="fa-solid fa-file-csv text-emerald-600"></i> Ekspor CSV
+              </button>
+              <button 
+                type="button" 
+                onclick="runDataAnomalyCheck(true)" 
+                class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-xs"
+                title="Pindai ulang seluruh riwayat absensi"
+              >
+                <i class="fa-solid fa-rotate"></i> Pindai Ulang
+              </button>
+            </div>
+          </div>
+
+          <!-- Container Daftar Anomali -->
+          <div id="adminAnomalyListContainer" class="space-y-2.5">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+        </div>
+
+        <!-- Admin Santri -->
+        <div id="adminSection_santri" class="admin-section space-y-4">
+          <div class="bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h4 class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload & Import Santri dari File Excel / CSV
+              </h4>
+              <p class="text-[11px] text-slate-600 mt-0.5">Format kolom Excel: <code class="bg-white px-1 py-0.5 rounded text-indigo-700 font-bold">NAMA, JENIS KELAMIN, TINGKAT TAKHOSSUS, PEMBINA TAKHOSSUS</code></p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="file" id="excelSantriInput" accept=".xlsx, .xls, .csv" onchange="handleExcelSantriUpload(event)" class="hidden" />
+              <button onclick="document.getElementById('excelSantriInput').click()" class="px-3 py-1.5 bg-emerald-700 text-white text-xs font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-upload"></i> Upload File Excel
+              </button>
+              <button onclick="exportSantriMasterToExcel()" class="px-3 py-1.5 bg-white text-indigo-800 border border-indigo-200 text-xs font-bold rounded-xl hover:bg-indigo-50 transition">
+                <i class="fa-solid fa-download"></i> Unduh Format
+              </button>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/60">
+            <h4 class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus text-indigo-600"></i> Tambah Santri Takhossus Manual
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input type="text" id="adminNewSantriNama" placeholder="Nama Lengkap Santri" class="text-xs rounded-xl border border-slate-200 p-2 bg-white" />
+              <select id="adminNewSantriGender" class="text-xs rounded-xl border border-slate-200 p-2 bg-white">
+                <option value="L">Laki-laki (L)</option>
+                <option value="P">Perempuan (P)</option>
+              </select>
+              <select id="adminNewSantriTingkat" class="text-xs rounded-xl border border-slate-200 p-2 bg-white">
+                <option value="1 PUTRA (Ula)">1 PUTRA (Ula)</option>
+                <option value="2 PUTRA (Wustho 1)">2 PUTRA (Wustho 1)</option>
+                <option value="1 PUTRI (Ula)">1 PUTRI (Ula)</option>
+                <option value="2A PUTRI (Wustho 1)">2A PUTRI (Wustho 1)</option>
+                <option value="2B PUTRI (Wustho 1)">2B PUTRI (Wustho 1)</option>
+                <option value="3 PUTRI (Wustho 2)">3 PUTRI (Wustho 2)</option>
+                <option value="4 PUTRI (ULYA 1)">4 PUTRI (ULYA 1)</option>
+              </select>
+              <button onclick="addSingleSantriManual()" class="px-3 py-2 bg-indigo-700 text-white text-xs font-bold rounded-xl hover:bg-indigo-800 transition">
+                <i class="fa-solid fa-plus"></i> Tambah Santri
+              </button>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <div class="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700" id="adminSantriCountText">Total 0 Santri</span>
+              <input type="text" id="adminSantriSearch" oninput="renderAdminSantriTable()" placeholder="Cari santri..." class="text-xs px-2.5 py-1 border border-slate-200 rounded-lg bg-white" />
+            </div>
+            <div class="max-h-80 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold sticky top-0">
+                  <tr>
+                    <th class="p-2.5">No</th>
+                    <th class="p-2.5">Nama Santri</th>
+                    <th class="p-2.5">L/P</th>
+                    <th class="p-2.5">Tingkat Takhossus</th>
+                    <th class="p-2.5">Pembina</th>
+                    <th class="p-2.5 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminSantriTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Jadwal Takhossus -->
+        <div id="adminSection_jadwalTakhossus" class="admin-section hidden space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-check text-emerald-600"></i> Daftar Jadwal Kajian Takhossus (2026-2027)
+              </h4>
+              <p class="text-[11px] text-slate-500">Kelola jadwal rutin pengajian takhossus per tingkatan santri, kitab, dan pembina.</p>
+            </div>
+            <button type="button" onclick="openAddJadwalTakhossusModal()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-plus text-amber-300"></i> Tambah Jadwal Takhossus
+            </button>
+          </div>
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div class="max-h-80 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold sticky top-0">
+                  <tr>
+                    <th class="p-2.5">Tingkatan</th>
+                    <th class="p-2.5">Hari</th>
+                    <th class="p-2.5">Kitab</th>
+                    <th class="p-2.5">Pembina / Ustadz</th>
+                    <th class="p-2.5 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminJadwalTakhossusBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Jadwal Angkatan -->
+        <div id="adminSection_jadwalAngkatan" class="admin-section hidden space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-days text-teal-600"></i> Daftar Jadwal Kajian Kitab Per-Angkatan (Rev-2)
+              </h4>
+              <p class="text-[11px] text-slate-500">Kelola jadwal kajian umum angkatan, kitab pengajian, waktu, dan tempat pelaksanaan.</p>
+            </div>
+            <button type="button" onclick="openAddJadwalAngkatanModal()" class="px-3.5 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-plus text-amber-300"></i> Tambah Jadwal Angkatan
+            </button>
+          </div>
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div class="max-h-80 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold sticky top-0">
+                  <tr>
+                    <th class="p-2.5">Kelas</th>
+                    <th class="p-2.5">Kapasitas</th>
+                    <th class="p-2.5">Kitab</th>
+                    <th class="p-2.5">Pengajar / Ustadz</th>
+                    <th class="p-2.5">Waktu</th>
+                    <th class="p-2.5">Tempat</th>
+                    <th class="p-2.5 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminJadwalAngkatanBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Ustadz -->
+        <div id="adminSection_ustadz" class="admin-section hidden space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-chalkboard-user text-indigo-600"></i> Manajemen Daftar Guru & Asatidz
+              </h4>
+              <p class="text-[11px] text-slate-500">Kelola master ustadz, gelar, penugasan mengajar takhossus & angkatan, serta kontak.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <input type="text" id="adminUstadzSearchInput" oninput="renderAdminUstadzManagement()" placeholder="Cari ustadz..." class="text-xs pl-7 pr-3 py-1.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-[10px] text-slate-400"></i>
+              </div>
+              <button type="button" onclick="openAddUstadzModal()" class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-user-plus text-amber-300"></i> Tambah Ustadz Baru
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabel Interaktif Manajemen Ustadz -->
+          <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div class="max-h-96 overflow-y-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold sticky top-0">
+                  <tr>
+                    <th class="p-2.5 w-8 text-center">No</th>
+                    <th class="p-2.5">Nama Ustadz / Pengajar</th>
+                    <th class="p-2.5">Penugasan / Peran</th>
+                    <th class="p-2.5">Jadwal & Kitab Terdaftar</th>
+                    <th class="p-2.5">Kontak</th>
+                    <th class="p-2.5 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUstadzManagementTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Ringkasan Pembina & Pengajar -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
+              <h4 class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-tie text-emerald-600"></i> Pembina Kajian Takhossus
+              </h4>
+              <ul id="adminListPembinaTakhossus" class="space-y-1.5 text-xs text-slate-700"></ul>
+            </div>
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50">
+              <h4 class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-chalkboard-user text-teal-600"></i> Pengajar Kajian Angkatan
+              </h4>
+              <ul id="adminListPengajarAngkatan" class="space-y-1.5 text-xs text-slate-700"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Detail Profil & Histori Ustadz -->
+  <div id="teacherProfileModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] my-auto">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 text-white p-4 sm:p-5 flex items-start justify-between relative">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-xl sm:text-2xl font-bold text-amber-300 shadow-inner" id="modalTeacherAvatar">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight" id="modalTeacherName">Nama Ustadz</h3>
+              <span id="modalTeacherRoleBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-300/40 text-emerald-200">
+                Pengajar
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5" id="modalTeacherScheduleInfo">Jadwal Tetap Mengajar</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeTeacherProfileModal()" 
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl w-8 h-8 flex items-center justify-center transition"
+          title="Tutup Modal"
+        >
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4">
+        <!-- Statistik & Rata-rata Performa Grid -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-simple text-emerald-600"></i> Ringkasan & Rata-rata Performa
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="modalTeacherStatsGrid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Jadwal Rutin Terdaftar -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <h4 class="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-check text-teal-600"></i> Jadwal Rutin dalam Sistem
+          </h4>
+          <div id="modalTeacherScheduleList" class="space-y-1.5 text-xs text-slate-700">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Riwayat Kehadiran Lengkap -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> Histori Kehadiran Lengkap
+            </h4>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200" id="modalTeacherHistoryCountBadge">
+              0 Sesi
+            </span>
+          </div>
+          <div id="modalTeacherHistoryList" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+        <div class="text-[11px] text-slate-500">
+          <i class="fa-solid fa-circle-info mr-1 text-emerald-600"></i> Data resmi arsip kehadiran pengajar Kutubutturats.
+        </div>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="exportCurrentTeacherProfileToPDF()" 
+            class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+          >
+            <i class="fa-solid fa-file-pdf text-amber-300"></i> Cetak PDF Profil
+          </button>
+          <button 
+            type="button" 
+            onclick="closeTeacherProfileModal()" 
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition shadow-sm"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail & Pengelolaan Antrean Offline -->
+  <div id="offlineQueueModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] my-auto">
+      <div class="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white p-4 sm:p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-amber-300 text-lg">
+            <i class="fa-solid fa-inbox"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Antrean Absensi Offline</h3>
+            <p class="text-xs text-purple-200">Daftar form absensi yang menunggu koneksi internet</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="toggleOfflineQueueModal(false)" 
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl w-8 h-8 flex items-center justify-center transition"
+        >
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-3">
+        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+          <span class="font-medium text-slate-600">Status Penyimpanan: <b class="text-emerald-700">Offline-First (IndexedDB / LocalStorage)</b></span>
+          <span id="modalQueueItemCount" class="font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">0 Data</span>
+        </div>
+
+        <div id="offlineQueueListContainer" class="space-y-2.5 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+        <button 
+          type="button" 
+          onclick="clearAllFailedQueue()" 
+          class="px-3 py-2 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition"
+        >
+          <i class="fa-solid fa-trash-can mr-1"></i> Kosongkan Antrean
+        </button>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="manualSync(); toggleOfflineQueueModal(false);" 
+            class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5"
+          >
+            <i class="fa-solid fa-rotate"></i> Sinkronkan Semua
+          </button>
+          <button 
+            type="button" 
+            onclick="toggleOfflineQueueModal(false)" 
+            class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ringkasan Absensi Mingguan untuk WhatsApp -->
+  <div id="weeklyWhatsAppModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 text-white p-4 sm:p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-xl shrink-0">
+            <i class="fa-brands fa-whatsapp"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>Ringkasan Absensi Mingguan WhatsApp</span>
+              <span class="text-[9px] bg-emerald-400 text-slate-950 font-extrabold px-2 py-0.5 rounded-full">Intent API</span>
+            </h3>
+            <p class="text-xs text-emerald-200">Format teks siap bagikan langsung ke grup WhatsApp asatidz & pengurus.</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeWeeklyWhatsAppModal()" 
+          class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl w-8 h-8 flex items-center justify-center transition"
+        >
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Controls + Live Text Preview) -->
+      <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4">
+        
+        <!-- Pilihan Preset Cepat -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wide mb-1.5">Pilih Rentang Periode</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button 
+              type="button" 
+              onclick="setWhatsAppPeriodPreset('last7days')" 
+              id="waPreset_last7days"
+              class="wa-preset-btn px-2.5 py-1.5 text-xs font-bold rounded-xl border border-emerald-600 bg-emerald-50 text-emerald-800 transition text-center"
+            >
+              <i class="fa-solid fa-clock-rotate-left mr-1 text-[10px]"></i> 7 Hari Terakhir
+            </button>
+            <button 
+              type="button" 
+              onclick="setWhatsAppPeriodPreset('thisWeek')" 
+              id="waPreset_thisWeek"
+              class="wa-preset-btn px-2.5 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-center"
+            >
+              <i class="fa-solid fa-calendar-week mr-1 text-[10px]"></i> Pekan Ini
+            </button>
+            <button 
+              type="button" 
+              onclick="setWhatsAppPeriodPreset('lastWeek')" 
+              id="waPreset_lastWeek"
+              class="wa-preset-btn px-2.5 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-center"
+            >
+              <i class="fa-solid fa-calendar-minus mr-1 text-[10px]"></i> Pekan Lalu
+            </button>
+            <button 
+              type="button" 
+              onclick="setWhatsAppPeriodPreset('thisMonth')" 
+              id="waPreset_thisMonth"
+              class="wa-preset-btn px-2.5 py-1.5 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition text-center"
+            >
+              <i class="fa-solid fa-calendar mr-1 text-[10px]"></i> Bulan Ini
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Detail -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 mb-1">Dari Tanggal</label>
+            <input 
+              type="date" 
+              id="waRecapStartDate" 
+              onchange="onWhatsAppRecapConfigChange()" 
+              class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+            />
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
+            <input 
+              type="date" 
+              id="waRecapEndDate" 
+              onchange="onWhatsAppRecapConfigChange()" 
+              class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+            />
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 mb-1">Kategori Program</label>
+            <select 
+              id="waRecapCategoryFilter" 
+              onchange="onWhatsAppRecapConfigChange()" 
+              class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            >
+              <option value="all">Semua (Takhossus & Angkatan)</option>
+              <option value="takhossus">Hanya Takhossus</option>
+              <option value="reguler">Hanya Kajian Angkatan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 mb-1">Filter Ustadz</label>
+            <select 
+              id="waRecapTeacherFilter" 
+              onchange="onWhatsAppRecapConfigChange()" 
+              class="w-full text-xs rounded-xl border border-slate-200 p-2 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            >
+              <option value="all">-- Semua Asatidz --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Opsi Tampilan Konten Teks -->
+        <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100 text-xs text-slate-700">
+          <span class="font-bold text-emerald-900 text-[11px]"><i class="fa-solid fa-sliders mr-1"></i> Format Teks:</span>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="waOptStats" checked onchange="onWhatsAppRecapConfigChange()" class="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span class="text-[11px]">Statistik & Rerata</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="waOptTeachers" checked onchange="onWhatsAppRecapConfigChange()" class="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span class="text-[11px]">Rekap Asatidz</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="waOptDaily" checked onchange="onWhatsAppRecapConfigChange()" class="rounded text-emerald-600 focus:ring-emerald-500" />
+              <span class="text-[11px]">Rincian Sesi Harian</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Live Preview Textarea -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-file-lines text-emerald-600"></i> Pratinjau Teks WhatsApp (Real-Time)
+            </label>
+            <span id="waRecapStatsBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+              0 Sesi Terdata
+            </span>
+          </div>
+          <div class="relative">
+            <textarea 
+              id="waRecapPreviewText" 
+              rows="10" 
+              readonly 
+              class="w-full text-xs font-mono rounded-2xl border border-slate-300 p-3.5 bg-slate-900 text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 custom-scrollbar leading-relaxed"
+              placeholder="Memuat ringkasan teks absensi mingguan..."
+            ></textarea>
+            <button 
+              type="button" 
+              onclick="copyWeeklyRecapText()" 
+              class="absolute top-2.5 right-2.5 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold rounded-lg border border-white/20 backdrop-blur-xs transition flex items-center gap-1 shadow-xs"
+              title="Salin Teks ke Clipboard"
+            >
+              <i class="fa-regular fa-copy"></i> Salin
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="copyWeeklyRecapText()" 
+            class="flex-1 sm:flex-none px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-regular fa-copy text-emerald-600"></i> Salin Teks
+          </button>
+          <button 
+            type="button" 
+            id="btnWaNativeShare"
+            onclick="shareWeeklyRecapViaNative()" 
+            class="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-share-nodes text-slate-600"></i> Bagikan
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="shareWeeklyRecapToWhatsApp()" 
+            class="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <i class="fa-brands fa-whatsapp text-base"></i> Kirim ke WhatsApp
+          </button>
+          <button 
+            type="button" 
+            onclick="closeWeeklyWhatsAppModal()" 
+            class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: UNDUH LAPORAN REKAPITULASI KEHADIRAN BULANAN (PDF ARSIP)    -->
+  <!-- =================================================================== -->
+  <div id="monthlyPdfExportModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scale-in">
+      
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-bold shadow-md">
+            <i class="fa-solid fa-file-pdf"></i>
+          </span>
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-white">Unduh Laporan Rekapitulasi Bulanan (PDF)</h3>
+            <p class="text-[11px] text-emerald-200 mt-0.5">Dokumen cetak resmi rekapitulasi statistik & rincian sesi terlaksana.</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeMonthlyPdfExportModal()" 
+          class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+          title="Tutup Modal"
+        >
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4">
+        
+        <!-- Pilihan Periode Bulan -->
+        <div>
+          <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days text-emerald-600"></i> Pilih Periode Bulan
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Bulan & Tahun Kajian</label>
+              <select 
+                id="monthlyPdfMonthSelect" 
+                onchange="onMonthlyPdfConfigChange()" 
+                class="w-full text-xs font-bold rounded-xl border border-emerald-300 p-2.5 bg-emerald-50/50 text-emerald-950 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              >
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Kategori Program</label>
+              <select 
+                id="monthlyPdfCategoryFilter" 
+                onchange="onMonthlyPdfConfigChange()" 
+                class="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              >
+                <option value="all">Semua Kategori (Takhossus & Angkatan)</option>
+                <option value="takhossus">Hanya Sesi Takhossus</option>
+                <option value="reguler">Hanya Kajian Angkatan</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kartu Pratinjau Ringkasan Statistik Bulan Terpilih -->
+        <div class="p-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl text-white border border-slate-700 shadow-inner">
+          <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+            <span class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-simple"></i> Pratinjau Data Laporan Bulan Terpilih
+            </span>
+            <span id="monthlyPdfPeriodLabel" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
+              -
+            </span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div class="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div class="text-[10px] text-slate-400 font-medium">Total Sesi Terlaksana</div>
+              <div class="text-base font-extrabold text-emerald-400 mt-0.5" id="monthlyPdfPreviewTotalSesi">0 Sesi</div>
+              <div class="text-[9px] text-slate-400" id="monthlyPdfPreviewTakAngkRatio">0 Tak • 0 Angk</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div class="text-[10px] text-slate-400 font-medium">Asatidz Pengajar</div>
+              <div class="text-base font-extrabold text-amber-300 mt-0.5" id="monthlyPdfPreviewTeachers">0 Ustadz</div>
+              <div class="text-[9px] text-slate-400" id="monthlyPdfPreviewActiveDays">0 Hari Aktif</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div class="text-[10px] text-slate-400 font-medium">Akumulasi Santri</div>
+              <div class="text-base font-extrabold text-teal-300 mt-0.5" id="monthlyPdfPreviewTotalSantri">0 Santri</div>
+              <div class="text-[9px] text-slate-400" id="monthlyPdfPreviewAvgSantri">Rerata: 0 / sesi</div>
+            </div>
+            <div class="bg-white/5 rounded-xl p-2 border border-white/5">
+              <div class="text-[10px] text-slate-400 font-medium">Kitab Dikaji</div>
+              <div class="text-base font-extrabold text-cyan-300 mt-0.5" id="monthlyPdfPreviewBooks">0 Kitab</div>
+              <div class="text-[9px] text-slate-400">Tercatat di log</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opsi Komponen Laporan yang Disertakan -->
+        <div>
+          <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-emerald-600"></i> Komponen Lembar Laporan
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer transition">
+              <input type="checkbox" id="monthlyPdfOptStats" checked class="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 w-4 h-4" />
+              <div>
+                <div class="font-bold text-slate-800">Ringkasan Statistik Eksekutif</div>
+                <div class="text-[10px] text-slate-500">Total sesi, rasio takhossus/angkatan, & rata-rata santri.</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer transition">
+              <input type="checkbox" id="monthlyPdfOptTeacherRecap" checked class="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 w-4 h-4" />
+              <div>
+                <div class="font-bold text-slate-800">Tabel Rekapitulasi Asatidz</div>
+                <div class="text-[10px] text-slate-500">Perhitungan jumlah kehadiran & kitab masing-masing ustadz.</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer transition">
+              <input type="checkbox" id="monthlyPdfOptSessionLog" checked class="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 w-4 h-4" />
+              <div>
+                <div class="font-bold text-slate-800">Log Kronologis Sesi Terlaksana</div>
+                <div class="text-[10px] text-slate-500">Daftar rinci tanggal, materi/bab kitab, santri hadir & catatan.</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer transition">
+              <input type="checkbox" id="monthlyPdfOptSignatures" checked class="rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 w-4 h-4" />
+              <div>
+                <div class="font-bold text-slate-800">Lembar Tanda Tangan & Pengesahan</div>
+                <div class="text-[10px] text-slate-500">Kolom pengesahan Mudir Ma'had & Koordinator Kutubutturats.</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Format & Info Dokumen -->
+        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-900">
+          <i class="fa-solid fa-circle-info text-emerald-700 mt-0.5 text-sm shrink-0"></i>
+          <div>
+            <span class="font-bold">Format Dokumen Cetak Standar:</span> Dokumen dirancang dalam ukuran kertas A4 potret dengan tata letak resmi kop Ma'had Al-Aqsha Kudus, siap diarsipkan maupun dicetak langsung.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+        <button 
+          type="button" 
+          onclick="printMonthlyRecapReport()" 
+          class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center justify-center gap-1.5 shadow-xs"
+        >
+          <i class="fa-solid fa-print text-slate-600"></i> Cetak Langsung / Print
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="triggerMonthlyPdfDownload()" 
+            class="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
+          >
+            <i class="fa-solid fa-file-arrow-down text-base text-amber-300"></i> Unduh Dokumen PDF
+          </button>
+          <button 
+            type="button" 
+            onclick="closeMonthlyPdfExportModal()" 
+            class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition"
+          >
+            Batal
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL: PERBAIKAN ANOMALI & KOREKSI RECORD RIWAYAT                  -->
+  <!-- =================================================================== -->
+  <div id="adminAnomalyFixModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scale-in">
+      <div class="p-4 bg-gradient-to-r from-rose-900 to-amber-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-base font-bold shadow-sm">
+            <i class="fa-solid fa-wrench"></i>
+          </span>
+          <div>
+            <h3 class="text-sm font-bold text-white" id="anomalyModalTitle">Koreksi Anomali Data</h3>
+            <p class="text-[11px] text-amber-200" id="anomalyModalSubtitle">Sesuaikan data agar valid dan akurat.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAnomalyFixModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 space-y-3.5 text-xs text-slate-700">
+        <!-- Kotak Info Temuan Masalah -->
+        <div id="anomalyModalProblemBox" class="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900">
+          <!-- Populated via JS -->
+        </div>
+
+        <input type="hidden" id="anomalyFixRecordId" value="" />
+        <input type="hidden" id="anomalyFixType" value="" />
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Absensi</label>
+            <input type="date" id="anomalyFixTanggal" class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2 bg-slate-50" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Program / Tipe</label>
+            <input type="text" id="anomalyFixProgram" readonly class="w-full text-xs font-bold rounded-xl border border-slate-200 p-2 bg-slate-100 text-slate-600" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Ustadz / Pengajar</label>
+            <input type="text" id="anomalyFixUstadz" class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2 bg-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Kitab Turats</label>
+            <input type="text" id="anomalyFixKitab" class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2 bg-white" />
+          </div>
+        </div>
+
+        <!-- Kolom Jumlah Kehadiran -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+          <div class="font-bold text-slate-800 text-[11px]">Penyesuaian Angka Kehadiran Santri</div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5" id="anomalyFixHadirLabel">Jumlah Santri Hadir</label>
+              <input type="number" min="0" id="anomalyFixTotalHadir" class="w-full text-xs font-extrabold text-emerald-900 rounded-xl border border-emerald-300 p-2 bg-emerald-50/50" />
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-500 mb-0.5" id="anomalyFixCapacityLabel">Kapasitas / Total Santri</label>
+              <input type="number" min="0" id="anomalyFixTotalSantri" class="w-full text-xs font-extrabold text-slate-800 rounded-xl border border-slate-300 p-2 bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Catatan Koreksi / Keterangan</label>
+          <input type="text" id="anomalyFixCatatan" placeholder="Tambahkan catatan koreksi (opsional)..." class="w-full text-xs rounded-xl border border-slate-300 p-2 bg-white" />
+        </div>
+      </div>
+
+      <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+        <button 
+          type="button" 
+          onclick="deleteRecordFromAnomalyModal()" 
+          class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5"
+          title="Hapus record bermasalah ini"
+        >
+          <i class="fa-solid fa-trash-can"></i> Hapus Data
+        </button>
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="closeAnomalyFixModal()" 
+            class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition"
+          >
+            Batal
+          </button>
+          <button 
+            type="button" 
+            onclick="saveAnomalyFixChanges()" 
+            class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+          >
+            <i class="fa-solid fa-check"></i> Simpan Perbaikan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL LOGIN AUTENTIKASI ADMIN                                     -->
+  <!-- ================================================================= -->
+  <div id="adminLoginModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+      <div class="p-5 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white relative">
+        <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center mb-3 shadow-inner">
+          <i class="fa-solid fa-lock text-amber-300 text-xl"></i>
+        </div>
+        <h3 class="text-base font-bold text-white">Autentikasi Akses Admin</h3>
+        <p class="text-xs text-indigo-200/90 mt-1">Menu pengaturan lembaga & master data hanya dapat diakses oleh Administrator.</p>
+        <button type="button" onclick="closeAdminLoginModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleAdminLoginSubmit(event)" class="p-5 space-y-3.5">
+        <!-- Error Alert -->
+        <div id="adminLoginErrorAlert" class="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl hidden flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+          <span id="adminLoginErrorMsg">Username atau password salah!</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Username Admin</label>
+          <div class="relative">
+            <input type="text" id="adminLoginUsername" autocomplete="username" required placeholder="Masukkan username..." class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 pl-8 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none" />
+            <i class="fa-solid fa-user absolute left-2.5 top-3 text-xs text-slate-400"></i>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+          <div class="relative">
+            <input type="password" id="adminLoginPassword" autocomplete="current-password" required placeholder="Masukkan password..." class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 pl-8 pr-9 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none" />
+            <i class="fa-solid fa-key absolute left-2.5 top-3 text-xs text-slate-400"></i>
+            <button type="button" onclick="toggleAdminPasswordVisibility()" class="absolute right-2.5 top-2.5 text-xs text-slate-400 hover:text-slate-600 p-0.5" title="Lihat password">
+              <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-xl text-[11px] text-indigo-900 flex items-start gap-2">
+          <i class="fa-solid fa-circle-info text-indigo-600 mt-0.5"></i>
+          <div>
+            <span class="font-bold">Kredensial Bawaan:</span>
+            <div class="text-[10px] text-indigo-700 mt-0.5">Username: <span class="font-mono font-bold bg-white px-1 py-0.5 rounded border border-indigo-200">admin</span> | Password: <span class="font-mono font-bold bg-white px-1 py-0.5 rounded border border-indigo-200">admin</span></div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeAdminLoginModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-right-to-bracket text-amber-300"></i> Masuk Sekarang
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL TAMBAH / EDIT USTADZ                                        -->
+  <!-- ================================================================= -->
+  <div id="modalManageUstadz" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+      <div class="p-4 bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+            <i class="fa-solid fa-chalkboard-user text-amber-300 text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold" id="modalManageUstadzTitle">Tambah Ustadz Baru</h3>
+            <p class="text-[10px] text-indigo-200">Master Data Pengajar Kutubutturats</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeManageUstadzModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveUstadz(event)" class="p-4 sm:p-5 space-y-3.5">
+        <input type="hidden" id="manageUstadzId" value="" />
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap & Gelar Ustadz <span class="text-rose-500">*</span></label>
+          <input type="text" id="manageUstadzNama" required placeholder="cth: Ahmad Yusuf, M.Ag" class="w-full text-xs font-bold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Penugasan / Peran Mengajar <span class="text-rose-500">*</span></label>
+          <select id="manageUstadzPeran" required class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option value="both">Keduanya (Pembina Takhossus & Pengajar Angkatan)</option>
+            <option value="takhossus">Khusus Pembina Kajian Takhossus</option>
+            <option value="angkatan">Khusus Pengajar Kajian Angkatan</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">No. Kontak / WhatsApp</label>
+            <input type="text" id="manageUstadzKontak" placeholder="cth: 0812-3456-7890" class="w-full text-xs rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan Tambahan</label>
+            <input type="text" id="manageUstadzKeterangan" placeholder="cth: Pembina Wustho 1" class="w-full text-xs rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <button type="button" id="manageUstadzBtnDelete" onclick="handleDeleteCurrentUstadz()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition hidden flex items-center gap-1.5">
+            <i class="fa-solid fa-trash-can"></i> Hapus Ustadz
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeManageUstadzModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-check text-amber-300"></i> Simpan Data Ustadz
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL TAMBAH / EDIT JADWAL TAKHOSSUS                              -->
+  <!-- ================================================================= -->
+  <div id="modalManageJadwalTakhossus" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+      <div class="p-4 bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+            <i class="fa-solid fa-calendar-check text-amber-300 text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold" id="modalManageJadwalTakTitle">Tambah Jadwal Takhossus</h3>
+            <p class="text-[10px] text-emerald-200">Jadwal Pengajian Tingkatan Santri</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeManageJadwalTakModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveJadwalTakhossus(event)" class="p-4 sm:p-5 space-y-3.5">
+        <input type="hidden" id="manageJadwalTakIndex" value="-1" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tingkatan Takhossus <span class="text-rose-500">*</span></label>
+            <select id="manageJadwalTakTingkat" required class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="1 PUTRA (Ula)">1 PUTRA (Ula)</option>
+              <option value="2 PUTRA (Wustho 1)">2 PUTRA (Wustho 1)</option>
+              <option value="1 PUTRI (Ula)">1 PUTRI (Ula)</option>
+              <option value="2A PUTRI (Wustho 1)">2A PUTRI (Wustho 1)</option>
+              <option value="2B PUTRI (Wustho 1)">2B PUTRI (Wustho 1)</option>
+              <option value="3 PUTRI (Wustho 2)">3 PUTRI (Wustho 2)</option>
+              <option value="4 PUTRI (ULYA 1)">4 PUTRI (ULYA 1)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Hari Kajian <span class="text-rose-500">*</span></label>
+            <select id="manageJadwalTakHari" required class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="Sabtu">Sabtu</option>
+              <option value="Ahad">Ahad</option>
+              <option value="Senin">Senin</option>
+              <option value="Selasa">Selasa</option>
+              <option value="Rabu">Rabu</option>
+              <option value="Kamis">Kamis</option>
+              <option value="Jumat">Jumat</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kitab Turats yang Dikaji <span class="text-rose-500">*</span></label>
+          <input type="text" id="manageJadwalTakKitab" required placeholder="cth: Jurumiyah / Safinatun Naja" class="w-full text-xs font-bold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pembina / Ustadz Pengampu <span class="text-rose-500">*</span></label>
+          <select id="manageJadwalTakUstadz" required class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <button type="button" id="manageJadwalTakBtnDelete" onclick="handleDeleteCurrentJadwalTak()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition hidden flex items-center gap-1.5">
+            <i class="fa-solid fa-trash-can"></i> Hapus Jadwal
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeManageJadwalTakModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-check text-amber-300"></i> Simpan Jadwal
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL TAMBAH / EDIT JADWAL ANGKATAN                               -->
+  <!-- ================================================================= -->
+  <div id="modalManageJadwalAngkatan" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+      <div class="p-4 bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center">
+            <i class="fa-solid fa-calendar-days text-amber-300 text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold" id="modalManageJadwalAngTitle">Tambah Jadwal Angkatan</h3>
+            <p class="text-[10px] text-teal-200">Kajian Umum Per-Angkatan Santri</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeManageJadwalAngModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveJadwalAngkatan(event)" class="p-4 sm:p-5 space-y-3.5">
+        <input type="hidden" id="manageJadwalAngIndex" value="-1" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kelas Santri <span class="text-rose-500">*</span></label>
+            <input type="text" id="manageJadwalAngKelas" required placeholder="cth: 1 Putra / 2 Putri" class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kapasitas Kelas (Santri) <span class="text-rose-500">*</span></label>
+            <input type="number" id="manageJadwalAngKapasitas" min="1" required placeholder="cth: 25" class="w-full text-xs font-bold text-teal-900 rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Waktu Kajian <span class="text-rose-500">*</span></label>
+            <input type="text" id="manageJadwalAngWaktu" required placeholder="cth: Kamis (sore) / Selasa (Malam)" class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tempat / Lokasi</label>
+            <input type="text" id="manageJadwalAngTempat" placeholder="cth: Aula Putra / Masjid / Math'am Putri" class="w-full text-xs rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kitab yang Dikaji <span class="text-rose-500">*</span></label>
+          <input type="text" id="manageJadwalAngKitab" required placeholder="cth: Bidayatul Hidayah" class="w-full text-xs font-bold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Pengajar / Ustadz <span class="text-rose-500">*</span></label>
+          <select id="manageJadwalAngUstadz" required class="w-full text-xs font-semibold rounded-xl border border-slate-300 p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:outline-none"></select>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <button type="button" id="manageJadwalAngBtnDelete" onclick="handleDeleteCurrentJadwalAng()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition hidden flex items-center gap-1.5">
+            <i class="fa-solid fa-trash-can"></i> Hapus Jadwal
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeManageJadwalAngModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+              <i class="fa-solid fa-check text-amber-300"></i> Simpan Jadwal
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MODAL PERINGATAN KAPASITAS KELAS TERLAMPAUI (SEBELUM SUBMIT)      -->
+  <!-- ================================================================= -->
+  <div id="modalConfirmOverCapacity" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-amber-200 overflow-hidden transform transition-all">
+      <div class="p-4 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shadow-xs">
+            <i class="fa-solid fa-triangle-exclamation text-white text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold">Peringatan Kapasitas Terlampaui</h3>
+            <p class="text-[10px] text-amber-100">Validasi Jumlah Santri Sebelum Kirim</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeOverCapacityConfirmModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 space-y-3.5">
+        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+          <div class="flex items-center justify-between text-xs mb-2 pb-2 border-b border-amber-200/60">
+            <span class="text-slate-600 font-medium">Program / Kelas:</span>
+            <span id="overCapModalClass" class="font-bold text-slate-800">-</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="bg-white p-2 rounded-xl border border-slate-200">
+              <div class="text-[10px] text-slate-500 font-semibold">Kapasitas Terdaftar</div>
+              <div id="overCapModalCapacity" class="text-base font-extrabold text-slate-700">0 Santri</div>
+            </div>
+            <div class="bg-amber-100/70 p-2 rounded-xl border border-amber-300">
+              <div class="text-[10px] text-amber-800 font-semibold">Jumlah Dimasukkan</div>
+              <div id="overCapModalEntered" class="text-base font-extrabold text-amber-900">0 Santri</div>
+            </div>
+          </div>
+          <div class="mt-2.5 text-[11px] text-amber-900 leading-relaxed bg-white/80 p-2 rounded-xl border border-amber-200 flex items-start gap-1.5">
+            <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 shrink-0"></i>
+            <span id="overCapModalMessage">Jumlah santri yang Anda masukkan melebihi kapasitas kelas terdaftar. Pastikan tidak ada salah input sebelum formulir dikirim.</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeOverCapacityConfirmModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> Periksa Kembali
+          </button>
+          <button type="button" id="btnProceedOverCapacitySubmit" onclick="confirmProceedOverCapacitySubmit()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-paper-plane"></i> Tetap Simpan & Kirim
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 shadow-lg">
+    <div class="max-w-md mx-auto grid grid-cols-5 px-1 py-1.5">
+      <button onclick="switchTab('dashboard')" id="navBtn_dashboard" class="nav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold relative">
+        <span id="navDashboardReminderDot" class="absolute top-1 right-5 w-2 h-2 bg-rose-500 rounded-full border border-white hidden animate-ping"></span>
+        <span id="navDashboardReminderDotSolid" class="absolute top-1 right-5 w-2 h-2 bg-rose-500 rounded-full border border-white hidden"></span>
+        <i class="fa-solid fa-house text-base mb-0.5"></i>
+        <span class="text-[10px]">Beranda</span>
+      </button>
+      <button onclick="switchTab('takhossus')" id="navBtn_takhossus" class="nav-item flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 font-medium relative">
+        <span id="navTakhossusReminderBadge" class="absolute top-0.5 right-3 px-1.5 py-0.2 bg-rose-500 text-white text-[9px] font-extrabold rounded-full border border-white hidden shadow-xs"></span>
+        <i class="fa-solid fa-user-graduate text-base mb-0.5"></i>
+        <span class="text-[10px]">Takhossus</span>
+      </button>
+      <button onclick="switchTab('reguler')" id="navBtn_reguler" class="nav-item flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 font-medium relative">
+        <span id="navRegulerReminderBadge" class="absolute top-0.5 right-3 px-1.5 py-0.2 bg-rose-500 text-white text-[9px] font-extrabold rounded-full border border-white hidden shadow-xs"></span>
+        <i class="fa-solid fa-users text-base mb-0.5"></i>
+        <span class="text-[10px]">Angkatan</span>
+      </button>
+      <button onclick="switchTab('filterGuru')" id="navBtn_filterGuru" class="nav-item flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 font-medium">
+        <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+        <span class="text-[10px]">Rekap Guru</span>
+      </button>
+      <button onclick="switchTab('admin')" id="navBtn_admin" class="nav-item flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600 font-medium relative">
+        <span id="navAdminAnomalyDot" class="absolute top-1 right-5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden animate-pulse"></span>
+        <i class="fa-solid fa-sliders text-base mb-0.5"></i>
+        <span class="text-[10px]">Admin</span>
+      </button>
+    </div>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
