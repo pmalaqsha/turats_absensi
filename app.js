@@ -7,7 +7,7 @@
 // KONFIGURASI URL GOOGLE APPS SCRIPT WEB APP
 // Paste URL Deployment Google Apps Script Anda di bawah ini:
 // =========================================================================
-const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwt9nKSchqdPQQL65aAHlXkDAEAkG_P3WxovhD3es8ku_cr2NR_5nHvk6sjxVAeYlVa/exec";
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwxeeDjdhBQQI9lVQNvjPGHpjJltgET03Cy0L8LdDXnNQ6gRQiqNx9UjhVbPiWr9Ek/exec";
 
 // Data Master Santri TDK dari PDF
 const DEFAULT_SANTRI_MASTER = [
