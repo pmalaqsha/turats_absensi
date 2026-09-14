@@ -72,13 +72,15 @@ const DEFAULT_SANTRI_MASTER = [
   { no: 59, nama: "AULIA BILQIS SUDARNO", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 60, nama: "AULIA NUR AZIMAH ASHIHAB", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 61, nama: "DHIA AMALIA PUTRI WIYONO", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
+  { no: 62, nama: "Denasya Nur Shafiya Putri", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 63, nama: "HASNA SHAFAA' NAFISAH", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 64, nama: "Mega Octaviani", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 65, nama: "MUTIARA AZZAHRA ROHYANA", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
   { no: 66, nama: "Nabila Esa Lestari", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
-  { no: 67, nama: "Regina Aulia Oktavia", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
-  { no: 68, nama: "SHAFA AULIA KAMILA", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
-  { no: 69, nama: "Vina Ramadhani", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
+  { no: 67, nama: "Nakheisya Saky Hafizah", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
+  { no: 68, nama: "Regina Aulia Oktavia", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
+  { no: 69, nama: "SHAFA AULIA KAMILA", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
+  { no: 70, nama: "Vina Ramadhani", gender: "P", tingkat: "4 PUTRI (ULYA 1)", pembina: "M. Mujabun, M.Ag" },
 
   // 1 PUTRA (Ula) - Pembina: Ahmad Yusuf, M.Ag
   { no: 1, nama: "Akmal Lathif Fannan", gender: "L", tingkat: "1 PUTRA (Ula)", pembina: "Ahmad Yusuf, M.Ag" },
