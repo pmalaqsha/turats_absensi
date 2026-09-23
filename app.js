@@ -141,12 +141,12 @@ const DEFAULT_JADWAL_TAKHOUSUS = [
   { tingkat: "1 PUTRI (Ula)", ustadz: "Aliffia Dzikrinnisa Hayatuddin, S.Sos", hari: "Rabu", kitab: "Aqidatul Awwam" },
   { tingkat: "1 PUTRI (Ula)", ustadz: "Aliffia Dzikrinnisa Hayatuddin, S.Sos", hari: "Kamis", kitab: "Matan Taqrib" },
 
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Sabtu", kitab: "Audohul Manahij" },
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Ahad", kitab: "Matan Taqrib" },
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Senin", kitab: "Amstilah Tashrifiyah" },
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Selasa", kitab: "Jurumiyah" },
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Rabu", kitab: "Jurumiyah" },
-  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Kamis", kitab: "Matan Taqrib" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Sabtu", kitab: "Audohul Manahij" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Ahad", kitab: "Matan Taqrib" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Senin", kitab: "Amstilah Tashrifiyah" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Selasa", kitab: "Jurumiyah" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Rabu", kitab: "Jurumiyah" },
+  { tingkat: "2A PUTRI (Wustho 1)", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", hari: "Kamis", kitab: "Matan Taqrib" },
 
   { tingkat: "2B PUTRI (Wustho 1)", ustadz: "Wildan Arifin, S.Hum", hari: "Sabtu", kitab: "Audohul Manahij" },
   { tingkat: "2B PUTRI (Wustho 1)", ustadz: "Ayu Maulida Tsamrotul Jannah, S.Sos", hari: "Ahad", kitab: "Matan Taqrib" },
@@ -173,7 +173,7 @@ const DEFAULT_JADWAL_TAKHOUSUS = [
 // Data Jadwal Angkatan dari PDF
 const DEFAULT_JADWAL_ANGKATAN = [
   { no: 1, kelas: "1 Putra", kitab: "Safinatu Naja", ustadz: "Angga Rizinida Fuzan, S.Sos", waktu: "Kamis (sore)", hari: "Kamis", tempat: "Aula Putra", kapasitas: 25 },
-  { no: 2, kelas: "1 Putri", kitab: "Risalatul Mahidl", ustadz: "Ayu Evita Maulid S. J, S.Sos", waktu: "Senin (sore)", hari: "Senin", tempat: "Aula Math'am Putri (lt.2)", kapasitas: 20 },
+  { no: 2, kelas: "1 Putri", kitab: "Risalatul Mahidl", ustadz: "Ayu Evita Maulida Tsamrotul Jannah, S.Sos", waktu: "Senin (sore)", hari: "Senin", tempat: "Aula Math'am Putri (lt.2)", kapasitas: 20 },
   { no: 3, kelas: "2 Putra", kitab: "Ta'limul Muta'allim", ustadz: "Gus Ahmad Maulana Ishaq, S.Sos", waktu: "Selasa (Malam)", hari: "Selasa", tempat: "Masjid", kapasitas: 25 },
   { no: 4, kelas: "2 Putri", kitab: "Safinatu Naja", ustadz: "Wildan Arifin, S.Hum", waktu: "Selasa (Sore)", hari: "Selasa", tempat: "Aula Math'am Putri (lt.2)", kapasitas: 30 },
   { no: 5, kelas: "3 Putra", kitab: "Bidayatul Hidayah", ustadz: "Ahmad Yusup, S.Pd.", waktu: "Rabu (sore)", hari: "Rabu", tempat: "Masjid", kapasitas: 25 },
